@@ -7,7 +7,7 @@ Research codebase for training convolutional networks from scratch with sparsity
 From the repo root, with dependencies installed (`pipenv install --dev`), run:
 
 ```bash
-cd /path/to/pia
+cd /path/to/lottery-ticket
 PYTHONPATH=src pipenv run python -m pia.cli.lottery_ticket \
   --output-dir ./runs/lt --run-name my_imp \
   --num-rounds 5 --prune-per-round 0.2 --epochs-per-round 10 \
