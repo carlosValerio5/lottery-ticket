@@ -140,9 +140,7 @@ def _render_intra_epoch(live_df: pd.DataFrame) -> None:
         ("train", "Train"),
         ("val", "Validación"),
     ):
-        sub = cast(
-            pd.DataFrame, live_df[live_df["phase"] == phase].copy()
-        )
+        sub = cast(pd.DataFrame, live_df[live_df["phase"] == phase].copy())
         if sub.empty:
             continue
         sub = sub.sort_values(by="batch", kind="stable")

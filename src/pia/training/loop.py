@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 import logging
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any, TextIO
 
@@ -59,6 +59,7 @@ def train_one_epoch(
     *,
     epoch: int = 1,
     live_batches_path: Path | None = None,
+    post_optimizer_step: Callable[[], None] | None = None,
 ) -> dict[str, float]:
     """
     Una época de entrenamiento con barra de progreso y comprobaciones de sanidad.
@@ -67,6 +68,8 @@ def train_one_epoch(
         epoch: Índice de época (1-based) para trazas ``live_batches.jsonl``.
         live_batches_path: Si se indica, se trunca al inicio y se appende una
             línea JSON por batch para observabilidad en tiempo casi real.
+        post_optimizer_step: Invocado justo después de ``optimizer.step()`` si
+            se proporciona (p. ej. reaplicar máscaras de poda).
 
     Returns:
         Diccionario con medias de pérdida y accuracy de train en la época.
@@ -97,6 +100,8 @@ def train_one_epoch(
                 raise RuntimeError("loss_nan")
             loss.backward()
             optimizer.step()
+            if post_optimizer_step is not None:
+                post_optimizer_step()
             acc = accuracy_top1(logits.detach(), y)
             loss_f = float(loss.detach().item())
             task_f = float(desglose.task.detach().item())
@@ -221,6 +226,7 @@ def fit(
     acc_floor: float = 0.1,
     val_acc_drop_warn: float = 0.15,
     live_progress_dir: Path | None = None,
+    post_optimizer_step: Callable[[], None] | None = None,
 ) -> dict[str, float]:
     """
     Entrena ``epochs`` épocas y notifica al observador.
@@ -231,6 +237,7 @@ def fit(
             a la época anterior, se emite ``WARNING`` (posible inestabilidad).
         live_progress_dir: Si se indica, escribe ``live_batches.jsonl`` por
             batch (train y val) para dashboards en vivo.
+        post_optimizer_step: Se reenvía a ``train_one_epoch`` en cada batch.
     """
     capture = ActivationCapture(model)
     observer.on_train_begin(dict(run_config))
@@ -250,6 +257,7 @@ def fit(
                 capture,
                 epoch=ep,
                 live_batches_path=live_path,
+                post_optimizer_step=post_optimizer_step,
             )
             val_m = evaluate(
                 model,

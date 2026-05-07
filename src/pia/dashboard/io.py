@@ -1,8 +1,8 @@
 """
-Lectura de ``events.jsonl`` generado durante el entrenamiento (sin Streamlit).
+Lectura de artefactos JSON/JSONL generados durante entrenamiento y poda IMP.
 
-Permite al dashboard y a las pruebas parsear líneas JSON de forma tolerante a
-archivos aún en escritura (última línea incompleta).
+Se centraliza el parseo tolerante para que las apps Streamlit puedan refrescar
+en caliente aunque un archivo esté en escritura por otro proceso.
 """
 
 from __future__ import annotations
@@ -44,12 +44,34 @@ def load_events_jsonl(path: Path) -> list[dict[str, Any]]:
     return filas
 
 
+def load_imp_index(path: Path) -> list[dict[str, Any]]:
+    """
+    Carga el índice de rondas IMP desde ``imp_index.json``.
+
+    Args:
+        path: Ruta al índice global producido por ``iterative_magnitude_pruning``.
+
+    Returns:
+        Lista de entradas por ronda; si el archivo no existe o no es válido,
+        devuelve una lista vacía para que el dashboard no falle.
+    """
+    if not path.is_file():
+        return []
+    try:
+        obj = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(obj, list):
+        return []
+    return [r for r in obj if isinstance(r, dict)]
+
+
 def to_metrics_dataframe(rows: list[dict[str, Any]]) -> pd.DataFrame:
     """
     Convierte filas de eventos en un ``DataFrame`` homogéneo.
 
     Args:
-        rows: Salida de ``load_events_jsonl``.
+        rows: Salida de ``load_events_jsonl`` o ``load_imp_index``.
 
     Returns:
         DataFrame con columnas unión de todas las claves; ``epoch`` numérico si
