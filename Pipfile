@@ -4,14 +4,20 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [packages]
+matplotlib = "*"
 numpy = "*"
+scikit-learn = "*"
+tensorboard = "*"
 torch = "*"
 torchvision = "*"
+tqdm = "*"
 
 [dev-packages]
 black = "*"
+pandas = "*"
 pytest = "*"
 ruff = "*"
+streamlit = ">=1.33.0"
 
 [requires]
 python_version = "3.13"
