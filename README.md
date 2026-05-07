@@ -1,15 +1,97 @@
 # Constraint-Driven Training for Modular Edge Models
 
-Research codebase for training convolutional networks from scratch with sparsity-oriented losses (see `tasks.md` for the full roadmap). **Phase 1** provides a CIFAR-style ResNet-18 builder, explicit Kaiming initialization, and named submodules for later activation penalties. **Phase 2** adds `SparseLoss` (CE + weight L1 + activation L1), CIFAR-10 loaders, a training/eval loop, optional λ/γ grid search, and **observability** (console, TensorBoard, CSV/JSONL artifacts, and Python logging).
+Research codebase for training convolutional networks from scratch with sparsity-oriented losses (see `tasks.md` for the full roadmap). **The primary workflow is iterative magnitude pruning (IMP) with weight rewinding**—the *lottery ticket* experiment: train a CIFAR ResNet-18 with `SparseLoss`, prune a fraction of surviving weights by global magnitude, rewind to the initial weights `θ₀`, and repeat. Each phase logs the same observability stack as single-run training (CSV/JSONL, TensorBoard, live batch traces).
 
-### Running the CLI
+## Lottery ticket (IMP): quick start
 
-The package lives under `src/pia`. Until you install the project in editable mode, set `PYTHONPATH` so `python -m pia.cli.train_cifar` resolves imports:
+From the repo root, with dependencies installed (`pipenv install --dev`), run:
+
+```bash
+cd /path/to/pia
+PYTHONPATH=src pipenv run python -m pia.cli.lottery_ticket \
+  --output-dir ./runs/lt --run-name my_imp \
+  --num-rounds 5 --prune-per-round 0.2 --epochs-per-round 10 \
+  --data-root ./data
+```
+
+**What this does:** there are `num_rounds + 1` training phases—round `0` is dense, then each subsequent round prunes `prune_per_round` of the *remaining* masked-in weights (globally across selected conv layers), reloads `θ₀` from disk, reapplies the growing mask, and trains for `epochs_per_round` again. Hyperparameters such as `--lambda-weight` and `--gamma-activation` match the sparse loss used in `train_cifar`.
+
+**Run directory** (example: `./runs/lt/my_imp/`):
+
+| Path | Role |
+|------|------|
+| `theta_0.pt` | Initial `state_dict` snapshot used after every prune step. |
+| `imp_index.json` | Append-style index: one entry per completed round (`round`, sparsity targets vs achieved, `final_metrics`, paths). |
+| `round_XX/` | Per-round artifacts (same layout as a normal training run): `metrics.csv`, `events.jsonl`, `live_batches.jsonl`, `tb/`, `summary.json`, `round_summary.json`. |
+| `masks_round_XX.pt` | Saved masks after a prune (not written after the final round). |
+
+Optional structured logging for the `pia` logger:
+
+```bash
+PYTHONPATH=src pipenv run python -m pia.cli.lottery_ticket \
+  --output-dir ./runs/lt --run-name my_imp --json-log ./runs/lt/my_imp/pia_structured.logl \
+  ...
+```
+
+### Lottery ticket dashboard (Streamlit)
+
+The IMP dashboard is a **separate** Streamlit app from the single-run trainer (`pia.cli.dashboard` runs `dashboard/app.py`). For lottery ticket, Streamlit loads `src/pia/dashboard/lottery_ticket_app.py`.
+
+**Requirements:** dev install includes **Streamlit ≥ 1.33**, **pandas**, and **Altair** (see [`Pipfile`](Pipfile) `[dev-packages]`).
+
+**Feature flag:** set `PIA_STREAMLIT_DASHBOARD` to `1`, `true`, `yes`, or `on`. The app refuses to run without it.
+
+**Default run directory:** set `PIA_RUN_DIR` to the IMP run folder (e.g. `./runs/lt/my_imp`) so the sidebar opens on the right experiment.
+
+**Terminal A — IMP training:**
+
+```bash
+cd /path/to/pia
+PYTHONPATH=src pipenv run python -m pia.cli.lottery_ticket \
+  --output-dir ./runs/lt --run-name my_imp --epochs-per-round 20
+```
+
+**Terminal B — dashboard** (after `round_00` exists or once training has started):
+
+```bash
+cd /path/to/pia
+export PIA_STREAMLIT_DASHBOARD=1
+export PIA_RUN_DIR="$(pwd)/runs/lt/my_imp"
+PYTHONPATH=src pipenv run python -m streamlit run src/pia/dashboard/lottery_ticket_app.py --server.port 8501
+```
+
+Open `http://localhost:8501` (or change `--server.port`).
+
+**Spawn from the lottery CLI** (detached process; Streamlit logs default to `<run_dir>/dashboard_streamlit.log`):
+
+```bash
+PYTHONPATH=src pipenv run python -m pia.cli.lottery_ticket \
+  --output-dir ./runs/lt --run-name my_imp \
+  --spawn-dashboard --dashboard-port 8501
+# Optional: --dashboard-log /tmp/streamlit_lt.log
+```
+
+**Using the UI:**
+
+- **Sidebar — “Directorio del run IMP”:** path to the run root (must contain `imp_index.json` and/or `round_XX` folders). Pre-filled from `PIA_RUN_DIR`.
+- **Sidebar — poll interval:** how often `imp_index.json` is re-read for the global summary (live batch charts refresh about every second regardless).
+- **“Resumen por ronda”:** metrics and Altair charts for target vs achieved sparsity and `val/acc` across IMP rounds, plus a table of all rounds.
+- **“Ronda a inspeccionar”:** pick a round; the main panel shows **live** train/val curves from that round’s `live_batches.jsonl` (current epoch) and **closed-epoch** curves from `events.jsonl` (accuracy, loss, foldable CE-only loss).
+
+Caption on the page summarizes the three files: `live_batches.jsonl` (intra-epoch), `events.jsonl` (per epoch), `imp_index.json` (cross-round summary).
+
+---
+
+## Single-run CIFAR training (`train_cifar`)
+
+For one training job without IMP, use:
 
 ```bash
 cd /path/to/pia
 PYTHONPATH=src pipenv run python -m pia.cli.train_cifar --epochs 1 --data-root ./data --logdir ./runs --run-name smoke
 ```
+
+Grid search, TensorBoard, JSON logging, and the **single-run** dashboard (`python -m pia.cli.dashboard --run-dir ./runs/exp1`) behave as before; see the sections below for artifact layout and observability details that also apply under each `round_XX/` directory during IMP.
 
 ### Training commands
 
@@ -27,10 +109,26 @@ PYTHONPATH=src pipenv run python -m pia.cli.train_cifar --grid --logdir ./runs/g
   --lambdas 1e-6 1e-5 --gammas 1e-6 1e-5
 ```
 
-Optional structured log file for the `pia` logger (see below):
+Optional structured log file for the `pia` logger:
 
 ```bash
 PYTHONPATH=src pipenv run python -m pia.cli.train_cifar --json-log ./runs/exp1/pia_structured.logl ...
+```
+
+### Live training dashboard (single run)
+
+The composite observer writes **`live_batches.jsonl`** and **`events.jsonl`** under the run directory. The **single-run** app is opt-in via `PIA_STREAMLIT_DASHBOARD` and launched with:
+
+```bash
+export PIA_STREAMLIT_DASHBOARD=1
+PYTHONPATH=src pipenv run python -m pia.cli.dashboard --run-dir ./runs/exp1
+```
+
+**Spawn from training (single run only; ignored with `--grid`):**
+
+```bash
+PYTHONPATH=src pipenv run python -m pia.cli.train_cifar --logdir ./runs --run-name exp1 \
+  --spawn-dashboard --dashboard-port 8501
 ```
 
 ### Logs and observability
@@ -44,15 +142,17 @@ Training uses a **composite observer** (`build_default_observer` in `src/pia/tra
 
 #### Run directory layout (`--logdir` / per-run folder)
 
-For a single run (`--logdir ./runs --run-name exp1`), artifacts land under **`./runs/exp1/`**:
+For a single run (`--logdir ./runs --run-name exp1`), artifacts land under **`./runs/exp1/`** (and the same filenames appear under each IMP `round_XX/`):
 
 | Artifact | Role |
 |----------|------|
 | `metrics.csv` | One **CSV row per epoch**. The header is fixed on the **first** epoch from all keys in that row: `epoch`, run config fields (`run_id`, `lambda_weight`, `gamma_activation`, `epochs`, `batch_size`, `lr`, `data_root`, `device`, optional `git_sha`), and aggregated metrics (see below). |
 | `events.jsonl` | **Append-only JSON lines**: each line is one epoch, merging the same run **config** snapshot with `epoch` and all **float metrics** (good for `jq`, log aggregators, or diffing across retries). |
-| `live_batches.jsonl` | **Per-batch JSON lines** while the **current** epoch runs: `phase` (`train` / `val`), `epoch`, `batch`, `loss`, `loss_task`, `acc`. Truncated at the start of each training phase; the Streamlit dashboard reads it for intra-epoch charts. |
+| `live_batches.jsonl` | **Per-batch JSON lines** while the **current** epoch runs: `phase` (`train` / `val`), `epoch`, `batch`, `loss`, `loss_task`, `acc`. Truncated at the start of each training phase; the Streamlit dashboards read it for intra-epoch charts. |
 | `tb/` | **TensorBoard** event files. Each metric name is a scalar; **`global_step` is the epoch index** (1-based in the loop). Point TensorBoard at this directory (as in the command above). |
 | `summary.json` | Written **once at the end** of the run: `{"config": {...}, "metrics": {...}}` with the **last epoch’s** merged train+val scalars. |
+
+During IMP, epoch metrics also include `pruning/imp_round`, `pruning/mask_sparsity`, and `pruning/prune_fraction_per_step`.
 
 **Scalar names** logged each epoch (from `fit` / `train_one_epoch` / `evaluate`):
 
@@ -93,46 +193,6 @@ Under `--logdir ./runs/grid`, each `(λ, γ)` combination gets its own subdirect
 
 Non-finite logits trigger **ERROR** and raise `RuntimeError`. Configure logging (level, file handlers) the same way as for training if you want JSON lines from inference shipped alongside training logs.
 
-### Live training dashboard (Streamlit)
-
-The dashboard polls **`live_batches.jsonl`** (per-batch metrics **during** the current train/val pass) and **`events.jsonl`** (one line **after** each full epoch). Curves update on a short disk poll interval without coupling training to the UI. It is **opt-in** via environment variable so the app is not exposed by mistake.
-
-**Requirements:** dev install includes **Streamlit ≥ 1.33** (for `@st.fragment(run_every=...)`) and **pandas** (see [`Pipfile`](Pipfile) `[dev-packages]`).
-
-**Feature flag:** set `PIA_STREAMLIT_DASHBOARD` to `1`, `true`, `yes`, or `on`. The Streamlit page also checks this and stops with an error if it is missing (e.g. if someone opens the app URL without the flag).
-
-**Optional default run directory:** `PIA_RUN_DIR` points the sidebar default to your run folder (e.g. `./runs/exp1`).
-
-**Terminal A — training:**
-
-```bash
-cd /path/to/pia
-PYTHONPATH=src pipenv run python -m pia.cli.train_cifar --logdir ./runs --run-name exp1 --epochs 20
-```
-
-**Terminal B — dashboard** (after the first epoch has appended to `events.jsonl`, or leave it open and it will show “waiting” until data exists):
-
-```bash
-cd /path/to/pia
-export PIA_STREAMLIT_DASHBOARD=1
-PYTHONPATH=src pipenv run python -m pia.cli.dashboard --run-dir ./runs/exp1
-```
-
-Or pass port: `--port 8502`.
-
-**Spawn from training (single run only):** Streamlit starts in a **detached** subprocess (new session) so **training logs stay on your terminal**; Streamlit’s stdout/stderr go to a file (default `<run_dir>/dashboard_streamlit.log`, override with `--dashboard-log`). Tail that file if you need the server’s own messages. Ignored with `--grid`.
-
-```bash
-PYTHONPATH=src pipenv run python -m pia.cli.train_cifar --logdir ./runs --run-name exp1 \
-  --spawn-dashboard --dashboard-port 8501
-# optional custom log path:
-#   ... --dashboard-log /tmp/streamlit_pia.log
-```
-
-Then open `http://localhost:8501` (or your chosen port). The child receives `PIA_STREAMLIT_DASHBOARD=1` and `PIA_RUN_DIR` pointing at the run directory.
-
-The dashboard shows **live line charts** (refreshed from disk each poll interval): one block for **train/acc vs val/acc**, one for **train/loss vs val/loss** (total sparse loss), and an expander for **CE-only** curves (`train/loss_task`, `val/loss_task`) when present.
-
 ## Prerequisites
 
 - **Python 3.13** (matches `Pipfile` `[requires]`)
@@ -147,7 +207,7 @@ From the repository root:
 pipenv install --dev
 ```
 
-That creates a virtualenv and installs **torch**, **torchvision**, **numpy**, **tensorboard**, **tqdm**, **scikit-learn**, **matplotlib**, plus dev tools **pytest**, **black**, **ruff**, **pandas**, and **streamlit** (dashboard).
+That creates a virtualenv and installs **torch**, **torchvision**, **numpy**, **tensorboard**, **tqdm**, **scikit-learn**, **matplotlib**, plus dev tools **pytest**, **black**, **ruff**, **pandas**, **streamlit**, and **altair** (dashboards).
 
 If virtualenv creation fails because the default location under your home directory is not writable, keep the environment inside the project:
 
@@ -176,12 +236,16 @@ pipenv run pytest
 | `src/pia/models/resnet_cifar.py` | ResNet-18 for small images, `apply_he_init`, monitored layers API. |
 | `src/pia/losses/sparse_loss.py` | `SparseLoss` and per-term breakdown. |
 | `src/pia/data/cifar10.py` | CIFAR-10 train/val/test `DataLoader` builders. |
+| `src/pia/pruning/lottery_ticket.py` | IMP orchestration (`iterative_magnitude_pruning`). |
+| `src/pia/pruning/` | Masks and magnitude pruning helpers. |
 | `src/pia/training/` | `fit`, observers, optional `grid_search` in `grid_search.py`. |
 | `src/pia/observability/logging_config.py` | `setup_pia_logging` (stderr + optional JSON file). |
 | `src/pia/inference/predict.py` | `run_inference_batch` for production-style latency logs. |
-| `src/pia/cli/train_cifar.py` | CLI entry (`python -m pia.cli.train_cifar`). |
-| `src/pia/cli/dashboard.py` | CLI entry for Streamlit (`python -m pia.cli.dashboard`). |
-| `src/pia/dashboard/` | `io.py` (JSONL → DataFrame), `app.py` (Streamlit UI). |
+| `src/pia/cli/train_cifar.py` | CLI entry for single-run training (`python -m pia.cli.train_cifar`). |
+| `src/pia/cli/lottery_ticket.py` | CLI entry for IMP (`python -m pia.cli.lottery_ticket`). |
+| `src/pia/cli/dashboard.py` | CLI entry for the **single-run** Streamlit app (`python -m pia.cli.dashboard`). |
+| `src/pia/dashboard/app.py` | Streamlit UI for one training run. |
+| `src/pia/dashboard/lottery_ticket_app.py` | Streamlit UI for IMP / lottery ticket runs. |
 | `context/` | Design notes (e.g. CIFAR stem and which layers are monitored). |
 | `tests/` | Pytest suite; `pyproject.toml` sets `pythonpath = ["src"]` so `import pia` works. |
 
