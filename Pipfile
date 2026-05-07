@@ -13,6 +13,7 @@ torchvision = "*"
 tqdm = "*"
 
 [dev-packages]
+altair = "*"
 black = "*"
 pandas = "*"
 pytest = "*"

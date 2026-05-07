@@ -15,6 +15,7 @@ import time
 from datetime import timedelta
 from pathlib import Path
 
+import altair as alt
 import pandas as pd
 import streamlit as st
 
@@ -52,6 +53,77 @@ def _metric_columns(df: pd.DataFrame) -> list[str]:
     return sorted(out)
 
 
+def _chart_linea_simple(
+    df: pd.DataFrame,
+    *,
+    x_col: str,
+    y_col: str,
+    titulo: str,
+    etiqueta_x: str,
+    etiqueta_y: str,
+    altura: int = 260,
+) -> alt.Chart:
+    """
+    Construye un gráfico de línea con una sola serie y títulos en ejes.
+
+    Se usa para métricas intra-época donde el eje X y el Y deben quedar
+    rotulados de forma explícita para el operador.
+    """
+    return (
+        alt.Chart(df)
+        .mark_line(point=True)
+        .encode(
+            x=alt.X(f"{x_col}:Q", title=etiqueta_x),
+            y=alt.Y(f"{y_col}:Q", title=etiqueta_y),
+            tooltip=[x_col, y_col],
+        )
+        .properties(title=titulo, height=altura)
+    )
+
+
+def _chart_multiserie(
+    df: pd.DataFrame,
+    *,
+    x_col: str,
+    columnas_valor: list[str],
+    titulo: str,
+    etiqueta_x: str,
+    etiqueta_y: str,
+    leyenda_serie: str = "Serie",
+    altura: int = 320,
+) -> alt.Chart:
+    """
+    Varias series en un mismo gráfico (formato largo) con leyenda de color.
+
+    El nombre de cada serie aparece en la leyenda (parámetro ``leyenda_serie``
+    es el título de esa leyenda en Vega/Altair).
+    """
+    if not columnas_valor:
+        return alt.Chart(pd.DataFrame()).mark_point()
+    base = df[[x_col] + columnas_valor].copy()
+    largo = base.melt(
+        id_vars=[x_col],
+        var_name="serie",
+        value_name="valor",
+    )
+    return (
+        alt.Chart(largo)
+        .mark_line(point=True)
+        .encode(
+            x=alt.X(f"{x_col}:Q", title=etiqueta_x),
+            y=alt.Y("valor:Q", title=etiqueta_y),
+            color=alt.Color("serie:N", title=leyenda_serie),
+            tooltip=[x_col, "serie", "valor"],
+        )
+        .properties(title=titulo, height=altura)
+    )
+
+
+def _mostrar_grafico(chart: alt.Chart) -> None:
+    """Renderiza un gráfico Altair ocupando el ancho del contenedor Streamlit."""
+    st.altair_chart(chart, use_container_width=True)
+
+
 def _render_intra_epoch(live_df: pd.DataFrame) -> None:
     """Gráficos por batch de la época en ejecución."""
     if "phase" not in live_df.columns:
@@ -71,14 +143,43 @@ def _render_intra_epoch(live_df: pd.DataFrame) -> None:
         if sub.empty:
             continue
         sub = sub.sort_values("batch", kind="stable")
-        st.markdown(f"**{titulo}** — pérdida total y accuracy por batch")
+        st.markdown(f"**{titulo}**")
         c1, c2 = st.columns(2)
         with c1:
-            st.line_chart(sub.set_index("batch")[["loss"]], height=260)
+            ch = _chart_linea_simple(
+                sub,
+                x_col="batch",
+                y_col="loss",
+                titulo=f"Pérdida total por batch — {titulo}",
+                etiqueta_x="Número de batch",
+                etiqueta_y="Pérdida total",
+                altura=260,
+            )
+            _mostrar_grafico(ch)
         with c2:
-            st.line_chart(sub.set_index("batch")[["acc"]], height=260)
-        with st.expander(f"CE (solo tarea) — {titulo}", expanded=False):
-            st.line_chart(sub.set_index("batch")[["loss_task"]], height=220)
+            ch = _chart_linea_simple(
+                sub,
+                x_col="batch",
+                y_col="acc",
+                titulo=f"Accuracy (top-1) - {titulo}",
+                etiqueta_x="Número de batch",
+                etiqueta_y="Accuracy",
+                altura=260,
+            )
+            _mostrar_grafico(ch)
+        with st.expander(
+            f"Pérdida solo entropía cruzada (CE) — {titulo}", expanded=False
+        ):
+            ch = _chart_linea_simple(
+                sub,
+                x_col="batch",
+                y_col="loss_task",
+                titulo=f"Pérdida CE - {titulo}",
+                etiqueta_x="Número de batch",
+                etiqueta_y="Entropía cruzada",
+                altura=220,
+            )
+            _mostrar_grafico(ch)
 
 
 def _render_completed_epochs(df: pd.DataFrame) -> None:
@@ -88,8 +189,9 @@ def _render_completed_epochs(df: pd.DataFrame) -> None:
         st.dataframe(df, use_container_width=True)
         return
 
+    st.divider()
+    st.subheader("Épocas cerradas (resumen en events.jsonl)")
     last = df.iloc[-1]
-    idx = df.set_index("epoch")
 
     c1, c2, c3, c4 = st.columns(4)
     if "train/acc" in df.columns:
@@ -101,31 +203,69 @@ def _render_completed_epochs(df: pd.DataFrame) -> None:
     if "val/loss" in df.columns:
         c4.metric("val/loss (última época)", f"{float(last['val/loss']):.4f}")
 
-    st.subheader("Accuracy por época (cerradas)")
     acc_cols = [c for c in ("train/acc", "val/acc") if c in df.columns]
     if acc_cols:
-        st.line_chart(idx[acc_cols], height=320)
+        ch = _chart_multiserie(
+            df,
+            x_col="epoch",
+            columnas_valor=acc_cols,
+            titulo="Accuracy por época",
+            etiqueta_x="Época",
+            etiqueta_y="Accuracy",
+            leyenda_serie="Curva",
+            altura=320,
+        )
+        _mostrar_grafico(ch)
     else:
         st.caption("No hay columnas train/acc ni val/acc en el JSONL.")
 
-    st.subheader("Pérdida total por época (cerradas)")
     loss_cols = [c for c in ("train/loss", "val/loss") if c in df.columns]
     if loss_cols:
-        st.line_chart(idx[loss_cols], height=320)
+        ch = _chart_multiserie(
+            df,
+            x_col="epoch",
+            columnas_valor=loss_cols,
+            titulo="Pérdida total por época",
+            etiqueta_x="Época",
+            etiqueta_y="Pérdida total",
+            leyenda_serie="Curva",
+            altura=320,
+        )
+        _mostrar_grafico(ch)
     else:
         st.caption("No hay columnas train/loss ni val/loss en el JSONL.")
 
     task_cols = [c for c in ("train/loss_task", "val/loss_task") if c in df.columns]
     if task_cols:
-        with st.expander("Pérdida solo CE (tarea) por época", expanded=False):
-            st.line_chart(idx[task_cols], height=260)
+        with st.expander("Pérdida solo CE por época", expanded=False):
+            ch = _chart_multiserie(
+                df,
+                x_col="epoch",
+                columnas_valor=task_cols,
+                titulo="Entropía cruzada - por época",
+                etiqueta_x="Época",
+                etiqueta_y="Entropía cruzada",
+                leyenda_serie="Curva",
+                altura=260,
+            )
+            _mostrar_grafico(ch)
 
     chart_cols = acc_cols + loss_cols
     conocidas = set(chart_cols) | set(task_cols)
     extra = [c for c in _metric_columns(df) if c not in conocidas]
     if extra:
         with st.expander("Más métricas por época"):
-            st.line_chart(df.set_index("epoch")[extra])
+            ch = _chart_multiserie(
+                df,
+                x_col="epoch",
+                columnas_valor=extra,
+                titulo="Otras métricas numéricas por época",
+                etiqueta_x="Época",
+                etiqueta_y="Valor de la métrica",
+                leyenda_serie="Nombre de la métrica",
+                altura=280,
+            )
+            _mostrar_grafico(ch)
 
     st.subheader("Tabla de eventos (épocas cerradas)")
     st.dataframe(df, use_container_width=True, height=min(400, 40 + 28 * len(df)))
