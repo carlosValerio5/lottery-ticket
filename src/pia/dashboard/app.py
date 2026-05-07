@@ -14,6 +14,7 @@ import os
 import time
 from datetime import timedelta
 from pathlib import Path
+from typing import cast
 
 import altair as alt
 import pandas as pd
@@ -139,10 +140,12 @@ def _render_intra_epoch(live_df: pd.DataFrame) -> None:
         ("train", "Train"),
         ("val", "Validación"),
     ):
-        sub = live_df[live_df["phase"] == phase].copy()
+        sub = cast(
+            pd.DataFrame, live_df[live_df["phase"] == phase].copy()
+        )
         if sub.empty:
             continue
-        sub = sub.sort_values("batch", kind="stable")
+        sub = sub.sort_values(by="batch", kind="stable")
         st.markdown(f"**{titulo}**")
         c1, c2 = st.columns(2)
         with c1:
@@ -344,12 +347,12 @@ def main() -> None:
             )
             return
 
-        if not live_empty:
+        if live_df is not None and not live_df.empty:
             _render_intra_epoch(live_df)
 
-        if not ev_empty:
+        if events_df is not None and not events_df.empty:
             _render_completed_epochs(events_df)
-        elif not live_empty:
+        elif live_df is not None and not live_df.empty:
             st.caption(
                 f"Cuando termine la época en curso aparecerán aquí las curvas "
                 f"agregadas en `{jsonl_path.name}`."
