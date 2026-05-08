@@ -39,6 +39,23 @@ def test_gamma_zero_ignores_empty_activations() -> None:
     assert float(br.activation_l1.item()) == 0.0
 
 
+def test_weight_l1_mean_matches_global_mean() -> None:
+    modelo = _TinyModel()
+    criterio = SparseLoss(
+        lambda_weight=1.0,
+        gamma_activation=0.0,
+        weight_l1_aggregation="mean",
+    )
+    logits = torch.randn(2, 3)
+    y = torch.randint(0, 3, (2,))
+    _, br = criterio(logits, y, modelo, {})
+    w = modelo.lin.weight.detach().abs().flatten()
+    b = modelo.lin.bias.detach().abs().flatten()
+    flat = torch.cat([w, b])
+    manual = flat.mean()
+    assert torch.allclose(br.weight_l1, manual)
+
+
 def test_backward_sparse_loss() -> None:
     modelo = _TinyModel()
     criterio = SparseLoss(lambda_weight=1e-3, gamma_activation=1e-3)

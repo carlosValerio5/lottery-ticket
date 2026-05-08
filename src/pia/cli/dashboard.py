@@ -10,6 +10,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from pia.dashboard.io import es_directorio_run_imp
+
 _FLAG_VALUES = frozenset({"1", "true", "yes", "on"})
 
 
@@ -17,8 +19,14 @@ def _flag_ok() -> bool:
     return os.environ.get("PIA_STREAMLIT_DASHBOARD", "").strip().lower() in _FLAG_VALUES
 
 
-def _app_path() -> Path:
+def _app_path_entrenamiento() -> Path:
     return Path(__file__).resolve().parent.parent / "dashboard" / "app.py"
+
+
+def _app_path_imp() -> Path:
+    return (
+        Path(__file__).resolve().parent.parent / "dashboard" / "lottery_ticket_app.py"
+    )
 
 
 def main() -> None:
@@ -50,7 +58,15 @@ def main() -> None:
     env = os.environ.copy()
     env["PIA_STREAMLIT_DASHBOARD"] = "1"
     env["PIA_RUN_DIR"] = str(run_resolved)
-    app = _app_path()
+    if es_directorio_run_imp(run_resolved):
+        app = _app_path_imp()
+        print(
+            "Nota: directorio IMP detectado; se usa lottery_ticket_app.py "
+            "(artefactos en round_XX/).",
+            file=sys.stderr,
+        )
+    else:
+        app = _app_path_entrenamiento()
     if not app.is_file():
         print(f"Error: no existe la app en {app}", file=sys.stderr)
         sys.exit(1)

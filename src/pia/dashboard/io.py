@@ -14,6 +14,19 @@ from typing import Any
 import pandas as pd
 
 
+def es_directorio_run_imp(run_path: Path) -> bool:
+    """
+    Devuelve True si la ruta parece la raíz de un experimento IMP (lottery ticket).
+
+    Los JSONL de entrenamiento están en subcarpetas ``round_XX/``, no en la raíz.
+    """
+    if not run_path.is_dir():
+        return False
+    if (run_path / "imp_index.json").is_file():
+        return True
+    return any(p.is_dir() for p in run_path.glob("round_*"))
+
+
 def load_events_jsonl(path: Path) -> list[dict[str, Any]]:
     """
     Carga eventos desde un archivo JSONL.
@@ -61,9 +74,13 @@ def load_imp_index(path: Path) -> list[dict[str, Any]]:
         obj = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         return []
-    if not isinstance(obj, list):
-        return []
-    return [r for r in obj if isinstance(r, dict)]
+    if isinstance(obj, list):
+        return [r for r in obj if isinstance(r, dict)]
+    if isinstance(obj, dict):
+        rounds = obj.get("rounds")
+        if isinstance(rounds, list):
+            return [r for r in rounds if isinstance(r, dict)]
+    return []
 
 
 def to_metrics_dataframe(rows: list[dict[str, Any]]) -> pd.DataFrame:

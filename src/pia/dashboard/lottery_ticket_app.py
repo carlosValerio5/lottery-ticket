@@ -22,6 +22,43 @@ from pia.dashboard.io import load_events_jsonl, load_imp_index, to_metrics_dataf
 _FLAG_VALUES = frozenset({"1", "true", "yes", "on"})
 
 
+def _fundir_metricas_a_largo(
+    df: pd.DataFrame,
+    id_vars: list[str],
+    value_vars: list[str],
+) -> pd.DataFrame:
+    """
+    Coacciona métricas a numérico y las funde en columnas ``serie`` / ``valor``.
+
+    Evita ``transform_fold`` de Vega-Lite, que a veces no infiere tipos al
+    cambiar de ronda o con datos heterogéneos desde JSONL.
+    """
+    if df.empty or not value_vars:
+        return pd.DataFrame()
+    for c in id_vars + value_vars:
+        if c not in df.columns:
+            return pd.DataFrame()
+    base = df[id_vars + value_vars].copy()
+    for c in id_vars + value_vars:
+        base[c] = pd.to_numeric(base[c], errors="coerce")
+    id_frame = base.loc[:, list(id_vars)]
+    mask_id = (
+        id_frame.notna().all(axis=1)
+        if isinstance(id_frame, pd.DataFrame)
+        else id_frame.notna()
+    )
+    base = base.loc[mask_id]
+    if base.empty:
+        return pd.DataFrame()
+    largo = base.melt(
+        id_vars=id_vars,
+        value_vars=value_vars,
+        var_name="serie",
+        value_name="valor",
+    )
+    return largo.dropna(subset=["valor"])
+
+
 def _feature_enabled() -> bool:
     """Indica si la UI está habilitada por variable de entorno explícita."""
     v = os.environ.get("PIA_STREAMLIT_DASHBOARD", "").strip().lower()
@@ -131,21 +168,24 @@ def _render_round_overview(df: pd.DataFrame) -> None:
     if pd.notna(last["val_acc"]):
         c3.metric("val/acc final", f"{float(last['val_acc']):.4f}")
 
-    ch1 = (
-        alt.Chart(df)
-        .transform_fold(
-            ["target_sparsity", "achieved_sparsity"], as_=["serie", "valor"]
-        )
-        .mark_line(point=True)
-        .encode(
-            x=alt.X("round:Q", title="Ronda IMP"),
-            y=alt.Y("valor:Q", title="Sparsidad"),
-            color=alt.Color("serie:N", title="Curva"),
-            tooltip=["round", "serie", "valor"],
-        )
-        .properties(title="Sparsidad objetivo vs lograda", height=300)
+    df_esp = _fundir_metricas_a_largo(
+        df,
+        id_vars=["round"],
+        value_vars=["target_sparsity", "achieved_sparsity"],
     )
-    st.altair_chart(ch1, use_container_width=True)
+    if not df_esp.empty:
+        ch1 = (
+            alt.Chart(df_esp)
+            .mark_line(point=True)
+            .encode(
+                x=alt.X("round:Q", title="Ronda IMP"),
+                y=alt.Y("valor:Q", title="Sparsidad"),
+                color=alt.Color("serie:N", title="Curva"),
+                tooltip=["round", "serie", "valor"],
+            )
+            .properties(title="Sparsidad objetivo vs lograda", height=300)
+        )
+        st.altair_chart(ch1, use_container_width=True)
 
     val_acc_col = df["val_acc"]
     if isinstance(val_acc_col, pd.Series) and bool(val_acc_col.notna().any()):
@@ -185,11 +225,7 @@ def _render_live_batches_en_ronda(live_df: pd.DataFrame, round_id: int) -> None:
     if "epoch" in df_work.columns and "batch" in df_work.columns:
         orden_fase = {"train": 0, "val": 1}
         df_work["_ord_fase"] = (
-            df_work["phase"]
-            .astype(str)
-            .replace(orden_fase)
-            .fillna(99)
-            .astype(int)
+            df_work["phase"].astype(str).replace(orden_fase).fillna(99).astype(int)
         )
         df_work = df_work.sort_values(
             by=["epoch", "_ord_fase", "batch"], kind="stable"
@@ -304,20 +340,24 @@ def _render_selected_round(
         if c in events.columns
     ]
     if series:
-        pliegue: list[str | alt.FieldName] = list(series)
-        ch = (
-            alt.Chart(events)
-            .transform_fold(pliegue, as_=["serie", "valor"])
-            .mark_line(point=True)
-            .encode(
-                x=alt.X("epoch:Q", title="Época"),
-                y=alt.Y("valor:Q", title="Valor"),
-                color=alt.Color("serie:N", title="Métrica"),
-                tooltip=["epoch", "serie", "valor"],
-            )
-            .properties(title="Curvas principales por época", height=320)
+        ev_largo = _fundir_metricas_a_largo(
+            events,
+            id_vars=["epoch"],
+            value_vars=series,
         )
-        st.altair_chart(ch, use_container_width=True)
+        if not ev_largo.empty:
+            ch = (
+                alt.Chart(ev_largo)
+                .mark_line(point=True)
+                .encode(
+                    x=alt.X("epoch:Q", title="Época"),
+                    y=alt.Y("valor:Q", title="Valor"),
+                    color=alt.Color("serie:N", title="Métrica"),
+                    tooltip=["epoch", "serie", "valor"],
+                )
+                .properties(title="Curvas principales por época", height=320)
+            )
+            st.altair_chart(ch, use_container_width=True)
 
 
 def main() -> None:
@@ -405,23 +445,22 @@ def main() -> None:
             return
 
         # Los fragmentos no pueden crear widgets en ``st.sidebar`` (Streamlit >= 1.33).
-        clave_sel = "lt_imp_round_choice"
-        if clave_sel not in st.session_state:
-            st.session_state[clave_sel] = int(rounds_idx[-1])
-        elegido = int(st.session_state[clave_sel])
-        if elegido not in rounds_idx:
-            elegido = int(rounds_idx[-1])
-            st.session_state[clave_sel] = elegido
-        ix = rounds_idx.index(elegido)
-        sel_i = int(
-            st.selectbox(
-                "Ronda a inspeccionar",
-                options=rounds_idx,
-                index=ix,
-                help="Vista detallada y curvas en vivo de esta ronda IMP.",
-            )
+        # Usar solo ``key=`` (sin ``index=``): si se mezcla ``index`` con el estado del
+        # widget, cada rerun del fragmento (~1 s) puede revertir la selección y dejar
+        # ``imp_live_df`` desincronizado respecto a la ronda mostrada.
+        clave_ronda = "lt_imp_round_sb"
+        if clave_ronda not in st.session_state:
+            st.session_state[clave_ronda] = int(rounds_idx[-1])
+        if int(st.session_state[clave_ronda]) not in rounds_idx:
+            st.session_state[clave_ronda] = int(rounds_idx[-1])
+
+        st.selectbox(
+            "Ronda a inspeccionar",
+            options=rounds_idx,
+            key=clave_ronda,
+            help="Vista detallada y curvas en vivo de esta ronda IMP.",
         )
-        st.session_state[clave_sel] = sel_i
+        sel_i = int(st.session_state[clave_ronda])
         live_path = run_path / f"round_{sel_i:02d}" / "live_batches.jsonl"
         round_changed = st.session_state.imp_live_round != sel_i
         if tick_live or round_changed:

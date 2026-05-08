@@ -93,7 +93,8 @@ def test_imp_index_monotonic_and_theta_file(tmp_path: Path) -> None:
     for k in theta_pre:
         assert torch.allclose(theta_pre[k], theta_disk[k])
     indice_path = run_dir / "imp_index.json"
-    data = json.loads(indice_path.read_text(encoding="utf-8"))
+    raw = json.loads(indice_path.read_text(encoding="utf-8"))
+    data = raw["rounds"] if isinstance(raw, dict) and "rounds" in raw else raw
     assert len(data) == 3
     prev = -1.0
     for fila in data:

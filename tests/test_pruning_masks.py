@@ -7,9 +7,12 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-from pia.models.resnet_cifar import apply_he_init
+from pia.models.resnet_cifar import apply_he_init, build_resnet18_cifar
 from pia.pruning.masks import WeightMaskRegistry
-from pia.pruning.prune import select_conv_weight_params
+from pia.pruning.prune import (
+    select_conv_weight_params,
+    select_imp_weight_params,
+)
 
 
 def test_registry_selects_only_conv_weights() -> None:
@@ -50,6 +53,28 @@ def test_grad_hook_masks_pruned_positions() -> None:
         assert float(g.reshape(-1)[0].item()) == 0.0
     finally:
         reg.remove_grad_hooks()
+
+
+def test_imp_selector_includes_linear_and_excludes_bn() -> None:
+    modelo = build_resnet18_cifar(num_classes=10)
+    nombres = [n for n, _ in select_imp_weight_params(modelo)]
+    assert "fc.weight" in nombres
+    assert "conv1.weight" in nombres
+    assert not any("bn" in n.lower() and n.endswith(".weight") for n in nombres)
+    assert not any(".bias" in n for n in nombres)
+
+
+def test_imp_selector_exclude_conv1_fc() -> None:
+    modelo = build_resnet18_cifar(num_classes=10)
+    nombres = [
+        n
+        for n, _ in select_imp_weight_params(
+            modelo, exclude_conv1=True, exclude_fc=True
+        )
+    ]
+    assert "conv1.weight" not in nombres
+    assert "fc.weight" not in nombres
+    assert any("layer1" in n for n in nombres)
 
 
 def test_current_sparsity_matches_mask() -> None:

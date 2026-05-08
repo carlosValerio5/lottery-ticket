@@ -227,6 +227,11 @@ def fit(
     val_acc_drop_warn: float = 0.15,
     live_progress_dir: Path | None = None,
     post_optimizer_step: Callable[[], None] | None = None,
+    lr_scheduler: torch.optim.lr_scheduler.LRScheduler | None = None,
+    epoch_end_callback: (
+        Callable[[int, nn.Module, dict[str, float]], None] | None
+    ) = None,
+    abort_training_on_val_acc_drop: float | None = None,
 ) -> dict[str, float]:
     """
     Entrena ``epochs`` épocas y notifica al observador.
@@ -238,6 +243,11 @@ def fit(
         live_progress_dir: Si se indica, escribe ``live_batches.jsonl`` por
             batch (train y val) para dashboards en vivo.
         post_optimizer_step: Se reenvía a ``train_one_epoch`` en cada batch.
+        lr_scheduler: Si se indica, ``step()`` tras cada época.
+        epoch_end_callback: Invocado tras ``on_epoch_end`` con
+            ``(época, modelo, métricas)`` (p. ej. checkpoints IMP).
+        abort_training_on_val_acc_drop: Si no es ``None`` y la ``val/acc`` baja
+            más que este margen respecto a la época anterior, corta el entrenamiento.
     """
     capture = ActivationCapture(model)
     observer.on_train_begin(dict(run_config))
@@ -270,6 +280,10 @@ def fit(
             )
             ultimo_val = {**train_m, **val_m}
             observer.on_epoch_end(ep, ultimo_val)
+            if epoch_end_callback is not None:
+                epoch_end_callback(ep, model, ultimo_val)
+            if lr_scheduler is not None:
+                lr_scheduler.step()
             if val_acc_prev is not None:
                 caida = val_acc_prev - val_m["val/acc"]
                 if caida > val_acc_drop_warn:
@@ -279,6 +293,16 @@ def fit(
                         val_m["val/acc"],
                         caida,
                     )
+                if (
+                    abort_training_on_val_acc_drop is not None
+                    and caida > abort_training_on_val_acc_drop
+                ):
+                    _log.warning(
+                        "Parada anticipada: caída val/acc %.4f > límite %.4f.",
+                        caida,
+                        abort_training_on_val_acc_drop,
+                    )
+                    break
             val_acc_prev = float(val_m["val/acc"])
             if val_m["val/acc"] < acc_floor:
                 _log.warning(

@@ -20,7 +20,11 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from pia.dashboard.io import load_events_jsonl, to_metrics_dataframe
+from pia.dashboard.io import (
+    es_directorio_run_imp,
+    load_events_jsonl,
+    to_metrics_dataframe,
+)
 
 _FLAG_VALUES = frozenset({"1", "true", "yes", "on"})
 
@@ -339,10 +343,25 @@ def main() -> None:
         live_empty = live_df is None or live_df.empty
 
         if ev_empty and live_empty:
-            st.info(
-                f"No hay datos aún en `{live_path}` ni en `{jsonl_path}`. "
-                "Arranca el entrenamiento con este directorio de run."
-            )
+            if es_directorio_run_imp(run_path):
+                app_imp = Path(__file__).resolve().parent / "lottery_ticket_app.py"
+                st.warning(
+                    "Esta carpeta es un **run IMP** (lottery ticket): los artefactos "
+                    "están en `round_00/`, `round_01/`, …, no en la raíz. "
+                    "Este dashboard espera `train_cifar` (un solo `events.jsonl` en la "
+                    "raíz del run)."
+                )
+                st.info(
+                    f"Abre el dashboard IMP, por ejemplo:\n\n"
+                    f"`streamlit run {app_imp}`\n\n"
+                    "con el mismo directorio en el campo de ruta (o usa "
+                    "`python -m pia.cli.lottery_ticket --spawn-dashboard`)."
+                )
+            else:
+                st.info(
+                    f"No hay datos aún en `{live_path}` ni en `{jsonl_path}`. "
+                    "Arranca el entrenamiento con este directorio de run."
+                )
             return
 
         if live_df is not None and not live_df.empty:

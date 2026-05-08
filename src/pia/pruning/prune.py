@@ -4,12 +4,76 @@ Selección de pesos convolucionales y poda global por magnitud.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 import torch
 from torch import Tensor, nn
 
 from pia.pruning.masks import WeightMaskRegistry
+
+
+def select_imp_weight_params(
+    model: nn.Module,
+    *,
+    exclude_conv1: bool = False,
+    exclude_fc: bool = False,
+) -> list[tuple[str, nn.Parameter]]:
+    """
+    Lista los ``weight`` de ``nn.Conv2d`` y ``nn.Linear`` (sin sesgos ni BatchNorm).
+
+    Convención IMP en ResNet: podar solo matrices de conv/cabezal FC; dejar densos
+    los afines de BatchNorm y los sesgos. Opcionalmente excluye el primer conv
+    (``conv1``) y/o la cabeza ``fc`` por ser capas pequeñas de alto impacto.
+
+    Args:
+        model: Red a inspeccionar.
+        exclude_conv1: Si True, no incluye el parámetro ``conv1.weight`` (raíz).
+        exclude_fc: Si True, no incluye ``fc.weight``.
+
+    Returns:
+        Lista ``(nombre_completo, parámetro)`` alineada con ``named_parameters``.
+    """
+    salida: list[tuple[str, nn.Parameter]] = []
+    for nombre, param in model.named_parameters():
+        if not nombre.endswith(".weight"):
+            continue
+        if exclude_conv1 and nombre == "conv1.weight":
+            continue
+        if exclude_fc and nombre == "fc.weight":
+            continue
+        prefijo = nombre[: -len(".weight")]
+        mod: nn.Module = model
+        if prefijo:
+            for parte in prefijo.split("."):
+                mod = getattr(mod, parte)
+        if isinstance(mod, (nn.Conv2d, nn.Linear)):
+            salida.append((nombre, param))
+    return salida
+
+
+def make_imp_param_selector(
+    *,
+    exclude_conv1: bool = False,
+    exclude_fc: bool = False,
+) -> Callable[[nn.Module], list[tuple[str, nn.Parameter]]]:
+    """
+    Devuelve una función compatible con ``WeightMaskRegistry.from_model``.
+
+    Args:
+        exclude_conv1: Ver ``select_imp_weight_params``.
+        exclude_fc: Ver ``select_imp_weight_params``.
+
+    Returns:
+        Callable que acepta un ``nn.Module`` y devuelve pares nombre/parámetro.
+    """
+
+    def _selector(m: nn.Module) -> list[tuple[str, nn.Parameter]]:
+        return select_imp_weight_params(
+            m, exclude_conv1=exclude_conv1, exclude_fc=exclude_fc
+        )
+
+    return _selector
 
 
 def select_conv_weight_params(model: nn.Module) -> list[tuple[str, nn.Parameter]]:

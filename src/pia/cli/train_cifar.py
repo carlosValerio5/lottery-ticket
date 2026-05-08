@@ -5,12 +5,17 @@ Entrada CLI para entrenar en CIFAR-10 con ``SparseLoss`` y observadores.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import logging
 import os
 import subprocess
 import sys
 from pathlib import Path
 
+from pia.cli.streamlit_child import (
+    registrar_dashboard_streamlit,
+    terminar_dashboard_streamlit_si_hay,
+)
 from pia.observability.logging_config import setup_pia_logging
 from pia.training.grid_search import grid_search, run_single_training
 
@@ -116,9 +121,11 @@ def main() -> None:
                     "--logger.level",
                     "info",
                 ]
+                proc = None
+                log_f = None
                 try:
                     log_f = log_path.open("a", encoding="utf-8")
-                    subprocess.Popen(
+                    proc = subprocess.Popen(
                         cmd,
                         env=env,
                         stdout=log_f,
@@ -126,6 +133,7 @@ def main() -> None:
                         stdin=subprocess.DEVNULL,
                         start_new_session=True,
                     )
+                    registrar_dashboard_streamlit(proc, log_f)
                     _log.info(
                         "Dashboard Streamlit desacoplado (PIA_RUN_DIR=%s). "
                         "URL: http://localhost:%s — salida del servidor en %s",
@@ -135,17 +143,23 @@ def main() -> None:
                     )
                 except OSError as exc:
                     _log.warning("No se pudo lanzar Streamlit: %s", exc)
+                    if log_f is not None:
+                        with contextlib.suppress(OSError):
+                            log_f.close()
         _log.info("Iniciando run_single_training en %s", run_dir)
-        run_single_training(
-            run_dir=run_dir,
-            lambda_weight=args.lambda_weight,
-            gamma_activation=args.gamma_activation,
-            data_root=args.data_root,
-            epochs=args.epochs,
-            batch_size=args.batch_size,
-            lr=args.lr,
-            num_workers=args.num_workers,
-        )
+        try:
+            run_single_training(
+                run_dir=run_dir,
+                lambda_weight=args.lambda_weight,
+                gamma_activation=args.gamma_activation,
+                data_root=args.data_root,
+                epochs=args.epochs,
+                batch_size=args.batch_size,
+                lr=args.lr,
+                num_workers=args.num_workers,
+            )
+        finally:
+            terminar_dashboard_streamlit_si_hay()
 
 
 if __name__ == "__main__":

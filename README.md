@@ -1,27 +1,46 @@
 # Constraint-Driven Training for Modular Edge Models
 
-Research codebase for training convolutional networks from scratch with sparsity-oriented losses (see `tasks.md` for the full roadmap). **The primary workflow is iterative magnitude pruning (IMP) with weight rewinding**—the *lottery ticket* experiment: train a CIFAR ResNet-18 with `SparseLoss`, prune a fraction of surviving weights by global magnitude, rewind to the initial weights `θ₀`, and repeat. Each phase logs the same observability stack as single-run training (CSV/JSONL, TensorBoard, live batch traces).
+Research codebase for training convolutional networks from scratch with sparsity-oriented losses (see `tasks.md` for the full roadmap). **The primary workflow is iterative magnitude pruning (IMP)**—the *lottery ticket* experiment: train a CIFAR ResNet-18 with `SparseLoss`, prune a fraction of surviving **Conv/Linear weights** by global magnitude (BatchNorm affine params and biases stay dense), optionally **rewind** to `θ₀`, to a **late-epoch checkpoint `θ_k`**, or **not at all**, then repeat. Each phase logs the same observability stack as single-run training (CSV/JSONL, TensorBoard, live batch traces).
+
+Baseline metrics and pass/fail heuristics for comparing runs (e.g. vs `large-epoch`): [`context/imp_baseline_large_epoch.md`](context/imp_baseline_large_epoch.md). A compact hyperparameter sweep template: [`scripts/imp_compact_sweep.sh`](scripts/imp_compact_sweep.sh).
 
 ## Lottery ticket (IMP): quick start
 
 From the repo root, with dependencies installed (`pipenv install --dev`), run:
 
 ```bash
-cd /path/to/lottery-ticket
+cd /path/to/pia
 PYTHONPATH=src pipenv run python -m pia.cli.lottery_ticket \
   --output-dir ./runs/lt --run-name my_imp \
   --num-rounds 5 --prune-per-round 0.2 --epochs-per-round 10 \
   --data-root ./data
 ```
 
-**What this does:** there are `num_rounds + 1` training phases—round `0` is dense, then each subsequent round prunes `prune_per_round` of the *remaining* masked-in weights (globally across selected conv layers), reloads `θ₀` from disk, reapplies the growing mask, and trains for `epochs_per_round` again. Hyperparameters such as `--lambda-weight` and `--gamma-activation` match the sparse loss used in `train_cifar`.
+**What this does:** there are `num_rounds + 1` training phases—round `0` is dense, then each subsequent round prunes `prune_per_round` of the *remaining* masked-in weights (globally across selected tensors), optionally reloads weights per `--rewind-mode`, reapplies the growing mask, and trains for `epochs_per_round` again.
+
+**Recommended knobs when validation collapses after the first prune:** try `--rewind-mode late_k --rewind-epoch-k 3` or `4`, lower `--prune-per-round` (e.g. `0.1`), `--lr-scheduler cosine`, smaller `--lambda-weight` / `--gamma-activation`, `--weight-l1-aggregation mean` or `mean_per_param`, and optionally `--exclude-conv1-from-pruning` / `--exclude-fc-from-pruning`.
+
+| Flag | Purpose |
+|------|---------|
+| `--rewind-mode theta0` | After each prune, reset to initial `θ₀` (default). |
+| `--rewind-mode late_k` | Reset to `θ_k` saved at end of epoch `k` in round 0 (`theta_late_k.pt`). |
+| `--rewind-mode none` | No weight reset; train from post-prune weights with mask applied. |
+| `--rewind-epoch-k` | Epoch index (1-based) for `late_k`; must be ≤ `epochs-per-round`. |
+| `--exclude-conv1-from-pruning` | Keep stem `conv1.weight` dense. |
+| `--exclude-fc-from-pruning` | Keep classifier `fc.weight` dense. |
+| `--lr-scheduler none\|cosine\|step` | Per-round LR schedule after each epoch. |
+| `--weight-l1-aggregation sum\|mean\|mean_per_param` | Scale of weight L1 in `SparseLoss`. |
+| `--abort-on-val-acc-drop` | If ≥ 0, stop the current phase when `val/acc` drops more than this between consecutive epochs. |
+
+**Sparsity metrics (logged each epoch):** `pruning/mask_sparsity` and `sparsity/mask_zero_fraction` are the **IMP mask** zero fraction on pruned parameter tensors. `train/weight_sparsity_ratio` / `val/weight_sparsity_ratio` count **all** model parameters with \|w\| \< 1e-3 (different notion; useful but not the mask).
 
 **Run directory** (example: `./runs/lt/my_imp/`):
 
 | Path | Role |
 |------|------|
-| `theta_0.pt` | Initial `state_dict` snapshot used after every prune step. |
-| `imp_index.json` | Append-style index: one entry per completed round (`round`, sparsity targets vs achieved, `final_metrics`, paths). |
+| `theta_0.pt` | Initial `state_dict` (CPU); used when `--rewind-mode theta0`. |
+| `theta_late_k.pt` | Checkpoint at epoch `k` of round 0 when using `late_k`. |
+| `imp_index.json` | Versioned index: `schema_version`, `run_status`, `meta`, and `rounds` (list of per-round entries with `status`). Legacy list-only files are still supported by the dashboard reader. |
 | `round_XX/` | Per-round artifacts (same layout as a normal training run): `metrics.csv`, `events.jsonl`, `live_batches.jsonl`, `tb/`, `summary.json`, `round_summary.json`. |
 | `masks_round_XX.pt` | Saved masks after a prune (not written after the final round). |
 

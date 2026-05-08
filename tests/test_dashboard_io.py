@@ -7,7 +7,12 @@ from pathlib import Path
 
 import pandas as pd
 
-from pia.dashboard.io import load_events_jsonl, to_metrics_dataframe
+from pia.dashboard.io import (
+    es_directorio_run_imp,
+    load_events_jsonl,
+    load_imp_index,
+    to_metrics_dataframe,
+)
 
 
 def test_load_events_jsonl_skips_bad_and_truncated(tmp_path: Path) -> None:
@@ -62,6 +67,37 @@ def test_load_live_batches_format(tmp_path: Path) -> None:
     df = to_metrics_dataframe(load_events_jsonl(p))
     assert len(df) == 3
     assert set(df["phase"]) == {"train", "val"}
+
+
+def test_es_directorio_run_imp(tmp_path: Path) -> None:
+    assert not es_directorio_run_imp(tmp_path / "no_existe")
+    normal = tmp_path / "single"
+    normal.mkdir()
+    (normal / "events.jsonl").write_text("{}\n", encoding="utf-8")
+    assert not es_directorio_run_imp(normal)
+    imp = tmp_path / "lt"
+    imp.mkdir()
+    (imp / "round_00").mkdir()
+    assert es_directorio_run_imp(imp)
+    (imp / "imp_index.json").write_text("[]", encoding="utf-8")
+    assert es_directorio_run_imp(imp)
+
+
+def test_load_imp_index_schema_v2(tmp_path: Path) -> None:
+    p = tmp_path / "imp_index.json"
+    p.write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "run_status": "complete",
+                "rounds": [{"round": 0, "status": "complete"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    rows = load_imp_index(p)
+    assert len(rows) == 1
+    assert rows[0]["round"] == 0
 
 
 def test_to_metrics_dataframe_sorts_epoch(tmp_path: Path) -> None:
