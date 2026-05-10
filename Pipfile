@@ -15,6 +15,7 @@ tqdm = "*"
 [dev-packages]
 altair = "*"
 black = "*"
+jupyter = "*"
 pandas = "*"
 pytest = "*"
 ruff = "*"

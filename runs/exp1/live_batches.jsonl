@@ -1,0 +1,11 @@
+{"phase": "train", "epoch": 2, "batch": 1, "loss": 3.53084397315979, "loss_task": 1.3566548824310303, "acc": 0.546875}
+{"phase": "train", "epoch": 2, "batch": 2, "loss": 3.612856149673462, "loss_task": 1.4393479824066162, "acc": 0.4453125}
+{"phase": "train", "epoch": 2, "batch": 3, "loss": 3.4991908073425293, "loss_task": 1.326356053352356, "acc": 0.53125}
+{"phase": "train", "epoch": 2, "batch": 4, "loss": 3.423999786376953, "loss_task": 1.2518333196640015, "acc": 0.5}
+{"phase": "train", "epoch": 2, "batch": 5, "loss": 3.462905168533325, "loss_task": 1.2914094924926758, "acc": 0.5546875}
+{"phase": "train", "epoch": 2, "batch": 6, "loss": 3.5990841388702393, "loss_task": 1.4282665252685547, "acc": 0.4765625}
+{"phase": "train", "epoch": 2, "batch": 7, "loss": 3.3110127449035645, "loss_task": 1.1408663988113403, "acc": 0.578125}
+{"phase": "train", "epoch": 2, "batch": 8, "loss": 3.3970956802368164, "loss_task": 1.2276114225387573, "acc": 0.515625}
+{"phase": "train", "epoch": 2, "batch": 9, "loss": 3.628251791000366, "loss_task": 1.4594392776489258, "acc": 0.5078125}
+{"phase": "train", "epoch": 2, "batch": 10, "loss": 3.601498603820801, "loss_task": 1.433367371559143, "acc": 0.5078125}
+{"phase": "train", "epoch": 2, "batch": 11, "loss": 3.3817670345306396, "loss_task": 1.2143120765686035, "acc": 0.4921875}

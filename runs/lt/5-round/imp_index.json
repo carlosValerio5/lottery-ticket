@@ -1,0 +1,114 @@
+[
+  {
+    "round": 0,
+    "run_dir": "/Users/carlosvalerio/Documents/Study/Aprendizaje/pia/runs/lt/5-round/round_00",
+    "final_metrics": {
+      "train/loss": 2.0056465413760054,
+      "train/loss_task": 0.7178219396790321,
+      "train/loss_weight_l1": 128780.71442205255,
+      "train/loss_activation_l1": 1.7489108236675912,
+      "train/acc": 0.7519136679104783,
+      "train/weight_sparsity_ratio": 0.41461238265037537,
+      "val/loss": 1.9811359167098999,
+      "val/loss_task": 0.7825836658477783,
+      "val/loss_weight_l1": 119853.390625,
+      "val/loss_activation_l1": 1.833180871605873,
+      "val/acc": 0.744140625,
+      "val/weight_sparsity_ratio": 0.41461238265037537
+    },
+    "target_sparsity": 0.020000000000000018,
+    "achieved_sparsity": 0.019999942648382972,
+    "prune_info": {
+      "target_prune_fraction": 0.02,
+      "survivors_pruned_fraction": 0.019999942648382972,
+      "achieved_cumulative_sparsity": 0.019999942648382972,
+      "threshold": 3.981117515650112e-06,
+      "k": 223184,
+      "n_survivors": 11159232
+    }
+  },
+  {
+    "round": 1,
+    "run_dir": "/Users/carlosvalerio/Documents/Study/Aprendizaje/pia/runs/lt/5-round/round_01",
+    "final_metrics": {
+      "train/loss": 1.9601674652235075,
+      "train/loss_task": 0.7214949313043193,
+      "train/loss_weight_l1": 123865.51520330255,
+      "train/loss_activation_l1": 1.742260325361382,
+      "train/acc": 0.7512157710099762,
+      "train/weight_sparsity_ratio": 0.4252971410751343,
+      "val/loss": 2.1614462047815324,
+      "val/loss_task": 1.0074683092534542,
+      "val/loss_weight_l1": 115396.0,
+      "val/loss_activation_l1": 1.7903271824121476,
+      "val/acc": 0.712109375,
+      "val/weight_sparsity_ratio": 0.4252971410751343
+    },
+    "target_sparsity": 0.03960000000000008,
+    "achieved_sparsity": 0.03959985776798977,
+    "prune_info": {
+      "target_prune_fraction": 0.02,
+      "survivors_pruned_fraction": 0.01999991221691785,
+      "achieved_cumulative_sparsity": 0.03959985776798977,
+      "threshold": 4.670348516810918e-06,
+      "k": 218720,
+      "n_survivors": 10936048
+    }
+  },
+  {
+    "round": 2,
+    "run_dir": "/Users/carlosvalerio/Documents/Study/Aprendizaje/pia/runs/lt/5-round/round_02",
+    "final_metrics": {
+      "train/loss": 1.9826059134846383,
+      "train/loss_task": 0.7165991447188638,
+      "train/loss_weight_l1": 126598.93184037642,
+      "train/loss_activation_l1": 1.7480471540581097,
+      "train/acc": 0.7524118133905259,
+      "train/weight_sparsity_ratio": 0.4236508011817932,
+      "val/loss": 2.366564580798149,
+      "val/loss_task": 1.1889095090329647,
+      "val/loss_weight_l1": 117763.6953125,
+      "val/loss_activation_l1": 1.807823285460472,
+      "val/acc": 0.6654296875,
+      "val/weight_sparsity_ratio": 0.4236508011817932
+    },
+    "target_sparsity": 0.05880800000000008,
+    "achieved_sparsity": 0.05880781042996507,
+    "prune_info": {
+      "target_prune_fraction": 0.02,
+      "survivors_pruned_fraction": 0.019999947748170065,
+      "achieved_cumulative_sparsity": 0.05880781042996507,
+      "threshold": 5.064287961431546e-06,
+      "k": 214346,
+      "n_survivors": 10717328
+    }
+  },
+  {
+    "round": 3,
+    "run_dir": "/Users/carlosvalerio/Documents/Study/Aprendizaje/pia/runs/lt/5-round/round_03",
+    "final_metrics": {
+      "train/loss": 2.0156406313180923,
+      "train/loss_task": 0.7179503972557458,
+      "train/loss_weight_l1": 129767.28553355824,
+      "train/loss_activation_l1": 1.743365221064199,
+      "train/acc": 0.7527200718494979,
+      "train/weight_sparsity_ratio": 0.4183216392993927,
+      "val/loss": 2.244909179210663,
+      "val/loss_task": 1.0364959228783845,
+      "val/loss_weight_l1": 120839.5546875,
+      "val/loss_activation_l1": 1.779028794169426,
+      "val/acc": 0.690625,
+      "val/weight_sparsity_ratio": 0.4183216392993927
+    },
+    "target_sparsity": 0.07763184000000012,
+    "achieved_sparsity": 0.07763159686974874,
+    "prune_info": {
+      "target_prune_fraction": 0.02,
+      "survivors_pruned_fraction": 0.01999993906492461,
+      "achieved_cumulative_sparsity": 0.07763159686974874,
+      "threshold": 5.875781425856985e-06,
+      "k": 210059,
+      "n_survivors": 10502982
+    }
+  }
+]

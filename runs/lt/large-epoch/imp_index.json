@@ -1,0 +1,58 @@
+[
+  {
+    "round": 0,
+    "run_dir": "/Users/carlosvalerio/Documents/Study/Aprendizaje/pia/runs/lt/large-epoch/round_00",
+    "final_metrics": {
+      "train/loss": 1.3712106059220703,
+      "train/loss_task": 0.5091841612011194,
+      "train/loss_weight_l1": 86201.0595259233,
+      "train/loss_activation_l1": 1.5868218256668611,
+      "train/acc": 0.8273629852655259,
+      "train/weight_sparsity_ratio": 0.5304100513458252,
+      "val/loss": 1.4756020128726959,
+      "val/loss_task": 0.6376636000350118,
+      "val/loss_weight_l1": 83792.21875,
+      "val/loss_activation_l1": 1.6259447187185287,
+      "val/acc": 0.7953125,
+      "val/weight_sparsity_ratio": 0.5304100513458252
+    },
+    "target_sparsity": 0.020000000000000018,
+    "achieved_sparsity": 0.019999942648382972,
+    "prune_info": {
+      "target_prune_fraction": 0.02,
+      "survivors_pruned_fraction": 0.019999942648382972,
+      "achieved_cumulative_sparsity": 0.019999942648382972,
+      "threshold": 4.264253220753744e-06,
+      "k": 223184,
+      "n_survivors": 11159232
+    }
+  },
+  {
+    "round": 1,
+    "run_dir": "/Users/carlosvalerio/Documents/Study/Aprendizaje/pia/runs/lt/large-epoch/round_01",
+    "final_metrics": {
+      "train/loss": 1.3630003983324224,
+      "train/loss_task": 0.5086594143120403,
+      "train/loss_weight_l1": 85432.51511452415,
+      "train/loss_activation_l1": 1.5849275995384564,
+      "train/acc": 0.8275578045709566,
+      "train/weight_sparsity_ratio": 0.48187562823295593,
+      "val/loss": 2.654269516468048,
+      "val/loss_task": 1.8042751669883728,
+      "val/loss_weight_l1": 84997.8203125,
+      "val/loss_activation_l1": 1.6148536860942841,
+      "val/acc": 0.596484375,
+      "val/weight_sparsity_ratio": 0.48187562823295593
+    },
+    "target_sparsity": 0.03960000000000008,
+    "achieved_sparsity": 0.03959985776798977,
+    "prune_info": {
+      "target_prune_fraction": 0.02,
+      "survivors_pruned_fraction": 0.01999991221691785,
+      "achieved_cumulative_sparsity": 0.03959985776798977,
+      "threshold": 5.894602509215474e-06,
+      "k": 218720,
+      "n_survivors": 10936048
+    }
+  }
+]

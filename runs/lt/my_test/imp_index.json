@@ -1,0 +1,78 @@
+[
+  {
+    "round": 0,
+    "run_dir": "/Users/carlosvalerio/Documents/Study/Aprendizaje/pia/runs/lt/my_test/round_00",
+    "final_metrics": {
+      "train/loss": 4.135665735737844,
+      "train/loss_task": 1.8712376037781888,
+      "train/loss_weight_l1": 226441.0605024858,
+      "train/loss_activation_l1": 1.7583362626081163,
+      "train/acc": 0.43034347383813426,
+      "train/weight_sparsity_ratio": 0.08271784335374832,
+      "val/loss": 3.443089318275452,
+      "val/loss_task": 1.2720297932624818,
+      "val/loss_weight_l1": 217104.15625,
+      "val/loss_activation_l1": 1.801950713992119,
+      "val/acc": 0.5521484375,
+      "val/weight_sparsity_ratio": 0.08271784335374832
+    },
+    "target_sparsity": 0.020000000000000018,
+    "achieved_sparsity": 0.019999942648382972,
+    "prune_info": {
+      "target_prune_fraction": 0.02,
+      "survivors_pruned_fraction": 0.019999942648382972,
+      "achieved_cumulative_sparsity": 0.019999942648382972,
+      "threshold": 8.716732554603368e-05,
+      "k": 223184,
+      "n_survivors": 11159232
+    }
+  },
+  {
+    "round": 1,
+    "run_dir": "/Users/carlosvalerio/Documents/Study/Aprendizaje/pia/runs/lt/my_test/round_01",
+    "final_metrics": {
+      "train/loss": 4.07821898907423,
+      "train/loss_task": 1.835391652347012,
+      "train/loss_weight_l1": 224280.97296697443,
+      "train/loss_activation_l1": 1.7684962539510294,
+      "train/acc": 0.4347774621776559,
+      "train/weight_sparsity_ratio": 0.10306961834430695,
+      "val/loss": 3.496426159143448,
+      "val/loss_task": 1.3567601874470712,
+      "val/loss_weight_l1": 213964.796875,
+      "val/loss_activation_l1": 1.8004961550235747,
+      "val/acc": 0.53515625,
+      "val/weight_sparsity_ratio": 0.10306961834430695
+    },
+    "target_sparsity": 0.03960000000000008,
+    "achieved_sparsity": 0.03959985776798977,
+    "prune_info": {
+      "target_prune_fraction": 0.02,
+      "survivors_pruned_fraction": 0.01999991221691785,
+      "achieved_cumulative_sparsity": 0.03959985776798977,
+      "threshold": 8.153064118232578e-05,
+      "k": 218720,
+      "n_survivors": 10936048
+    }
+  },
+  {
+    "round": 2,
+    "run_dir": "/Users/carlosvalerio/Documents/Study/Aprendizaje/pia/runs/lt/my_test/round_02",
+    "final_metrics": {
+      "train/loss": 3.9931768375364216,
+      "train/loss_task": 1.7697295983406631,
+      "train/loss_weight_l1": 222342.98259943182,
+      "train/loss_activation_l1": 1.7476957531815225,
+      "train/acc": 0.44432114115492866,
+      "train/weight_sparsity_ratio": 0.11976342648267746,
+      "val/loss": 3.5440705358982085,
+      "val/loss_task": 1.429019396007061,
+      "val/loss_weight_l1": 211503.359375,
+      "val/loss_activation_l1": 1.751699560880661,
+      "val/acc": 0.5123046875,
+      "val/weight_sparsity_ratio": 0.11976342648267746
+    },
+    "target_sparsity": 0.03960000000000008,
+    "achieved_sparsity": 0.03959985776798977
+  }
+]

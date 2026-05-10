@@ -4,5 +4,6 @@ __pycache__/
 .ruff_cache/
 .pytest_cache/
 data/
-runs/
 pia.egg-info/
+notebooks/.ipynb_checkpoints
+runs/**/*.pt

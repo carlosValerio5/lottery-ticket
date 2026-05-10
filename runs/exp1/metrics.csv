@@ -1,0 +1,2 @@
+batch_size,data_root,device,epoch,epochs,gamma_activation,git_sha,lambda_weight,lr,run_id,train/acc,train/loss,train/loss_activation_l1,train/loss_task,train/loss_weight_l1,train/weight_sparsity_ratio,val/acc,val/loss,val/loss_activation_l1,val/loss_task,val/loss_weight_l1,val/weight_sparsity_ratio
+128,./data,cpu,1,5,1e-05,48bfaf6,1e-05,0.001,exp1,0.42359138263220136,4.140935626219619,1.7467273595658215,1.874779956584627,226613.82275390625,0.08268678188323975,0.4984375,3.6614925026893617,1.7618088334798814,1.487303438782692,217417.15625,0.08268678188323975

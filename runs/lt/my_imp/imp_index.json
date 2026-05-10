@@ -1,0 +1,30 @@
+[
+  {
+    "round": 0,
+    "run_dir": "/Users/carlosvalerio/Documents/Study/Aprendizaje/pia/runs/lt/my_imp/round_00",
+    "final_metrics": {
+      "train/loss": 4.1506091823632065,
+      "train/loss_task": 1.8810728585178202,
+      "train/loss_weight_l1": 226951.88916015625,
+      "train/loss_activation_l1": 1.7502929043363442,
+      "train/acc": 0.43704131160947407,
+      "train/weight_sparsity_ratio": 0.07963719218969345,
+      "val/loss": 3.579098755121231,
+      "val/loss_task": 1.3958080023527146,
+      "val/loss_weight_l1": 218327.296875,
+      "val/loss_activation_l1": 1.795510157942772,
+      "val/acc": 0.5158203125,
+      "val/weight_sparsity_ratio": 0.07963719218969345
+    },
+    "target_sparsity": 0.020000000000000018,
+    "achieved_sparsity": 0.019999942648382972,
+    "prune_info": {
+      "target_prune_fraction": 0.02,
+      "survivors_pruned_fraction": 0.019999942648382972,
+      "achieved_cumulative_sparsity": 0.019999942648382972,
+      "threshold": 8.576629625167698e-05,
+      "k": 223184,
+      "n_survivors": 11159232
+    }
+  }
+]
