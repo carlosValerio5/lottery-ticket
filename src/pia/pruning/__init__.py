@@ -16,11 +16,23 @@ from pia.pruning.resnet18_slim import (
     slim_resnet18_cifar_from_state_dict,
 )
 
+from pia.pruning.prune_structured import (
+    NarrowableChainCnn,
+    chain_cnn_channel_l1_scores,
+    count_parameters,
+    narrow_chain_cnn_by_fraction,
+)
+from pia.pruning.structured_ticket import iterative_structured_magnitude_pruning
 
 __all__ = [
+    "NarrowableChainCnn",
     "WeightMaskRegistry",
+    "chain_cnn_channel_l1_scores",
+    "count_parameters",
     "iterative_magnitude_pruning",
+    "iterative_structured_magnitude_pruning",
     "make_imp_param_selector",
+    "narrow_chain_cnn_by_fraction",
     "parameter_and_buffer_bytes",
     "prune_globally_by_magnitude",
     "select_conv_weight_params",

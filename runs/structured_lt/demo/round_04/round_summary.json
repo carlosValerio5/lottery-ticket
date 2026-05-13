@@ -1,0 +1,57 @@
+{
+  "config": {
+    "run_id": "round_04",
+    "structured_parent": "demo",
+    "structured_round": 4,
+    "lambda_weight": 1e-05,
+    "gamma_activation": 1e-05,
+    "epochs": 10,
+    "batch_size": 128,
+    "lr": 0.001,
+    "data_root": "./data",
+    "device": "mps",
+    "pruning/imp_round": 4.0,
+    "pruning/mask_sparsity": 0.5625,
+    "pruning/prune_fraction_per_step": 0.2,
+    "structured/conv_width": 14.0,
+    "structured/initial_width": 32.0,
+    "structured/lr_scheduler": "none",
+    "structured/weight_l1_aggregation": "sum",
+    "git_sha": "99ac351"
+  },
+  "metrics": {
+    "train/loss": 1.1809582227671689,
+    "train/loss_task": 1.056366508149288,
+    "train/loss_weight_l1": 12459.040629993786,
+    "train/loss_activation_l1": 0.1311699892817573,
+    "train/acc": 0.6355646306818182,
+    "train/weight_sparsity_ratio": 0.026382703334093094,
+    "val/loss": 1.1508129686117172,
+    "val/loss_task": 1.026595838367939,
+    "val/loss_weight_l1": 12421.61328125,
+    "val/loss_activation_l1": 0.10274299755692481,
+    "val/acc": 0.6529296875,
+    "val/weight_sparsity_ratio": 0.026382703334093094
+  },
+  "layer_shapes": {
+    "conv1.weight": [
+      14,
+      3,
+      3,
+      3
+    ],
+    "conv2.weight": [
+      14,
+      14,
+      3,
+      3
+    ],
+    "fc.weight": [
+      10,
+      14336
+    ],
+    "fc.bias": [
+      10
+    ]
+  }
+}
