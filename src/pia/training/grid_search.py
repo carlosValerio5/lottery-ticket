@@ -74,6 +74,9 @@ def run_single_training(
     """
     Un run completo: datos, modelo, optimizador y ``fit``.
 
+    Tras ``fit`` persiste ``model_state.pt`` (``state_dict`` en CPU) junto a
+    ``summary.json``.
+
     Args:
         observer_factory: Callable ``(Path) -> TrainingObserver``; si es
             ``None``, se usa ``build_default_observer``.
@@ -126,6 +129,10 @@ def run_single_training(
     resumen_path.write_text(
         json.dumps({"metrics": ultimo, "config": run_config}, indent=2),
         encoding="utf-8",
+    )
+    torch.save(
+        {k: v.detach().cpu() for k, v in modelo.state_dict().items()},
+        run_path / "model_state.pt",
     )
     return ultimo
 

@@ -32,3 +32,10 @@ def test_run_single_training_smoke(tmp_path: Path) -> None:
         )
     assert "val/acc" in ultimo
     assert (tmp_path / "r0" / "summary.json").is_file()
+    ckpt = tmp_path / "r0" / "model_state.pt"
+    assert ckpt.is_file()
+    try:
+        sd = torch.load(ckpt, map_location="cpu", weights_only=True)
+    except TypeError:
+        sd = torch.load(ckpt, map_location="cpu")
+    assert isinstance(sd, dict) and len(sd) > 0

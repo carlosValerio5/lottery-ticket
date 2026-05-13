@@ -161,6 +161,10 @@ def iterative_magnitude_pruning(
     Returns:
         Lista de entradas (una por fase), reflejada en ``imp_index.json`` bajo
         la clave ``rounds``.
+
+    Tras cada ``fit`` se guarda ``round_XX/model_state.pt`` (``state_dict`` en
+    CPU). Al terminar todas las fases se escribe ``model_final.pt`` en la raíz
+    del run (mismo contenido que el último ``model_state.pt``).
     """
     if num_rounds < 0:
         msg = "num_rounds no puede ser negativo."
@@ -317,6 +321,10 @@ def iterative_magnitude_pruning(
                 epoch_end_callback=epoch_cb,
                 abort_training_on_val_acc_drop=abort_training_on_val_acc_drop,
             )
+            torch.save(
+                {k: v.detach().cpu() for k, v in modelo.state_dict().items()},
+                round_dir / "model_state.pt",
+            )
             if (
                 rewind_mode == "late_k"
                 and r == 0
@@ -378,6 +386,10 @@ def iterative_magnitude_pruning(
     finally:
         mascaras.remove_grad_hooks()
     _persist_imp_index(ruta, indice, run_status="complete", meta=meta)
+    torch.save(
+        {k: v.detach().cpu() for k, v in modelo.state_dict().items()},
+        ruta / "model_final.pt",
+    )
     return indice
 
 
