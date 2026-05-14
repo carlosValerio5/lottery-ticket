@@ -9,9 +9,9 @@ import logging
 from pathlib import Path
 
 from pia.data.cifar10 import build_cifar10_loaders
+from pia.models.narrowable_chain_cnn import NarrowableChainCnn
 from pia.models.resnet_cifar import apply_he_init
 from pia.observability.logging_config import setup_pia_logging
-from pia.pruning.prune_structured import NarrowableChainCnn
 from pia.pruning.structured_ticket import iterative_structured_magnitude_pruning
 
 _log = logging.getLogger("pia.cli")
@@ -88,6 +88,31 @@ def main() -> None:
             "entre épocas consecutivas."
         ),
     )
+    parser.add_argument(
+        "--early-stop-val-loss-relative",
+        type=float,
+        default=-1.0,
+        help=(
+            "Si >= 0, detiene la fase cuando val/loss supera (1+r) veces el mejor "
+            "val/loss visto en esa fase durante --early-stop-patience épocas "
+            "consecutivas (rebote tras un mínimo)."
+        ),
+    )
+    parser.add_argument(
+        "--early-stop-patience",
+        type=int,
+        default=1,
+        help=(
+            "Con --early-stop-val-loss-relative >= 0: épocas consecutivas "
+            "por encima del umbral."
+        ),
+    )
+    parser.add_argument(
+        "--early-stop-val-loss-min-delta",
+        type=float,
+        default=0.0,
+        help="Mejora mínima en val/loss para registrar un nuevo mínimo en early stop.",
+    )
     args = parser.parse_args()
     log_path = args.json_log.strip() or None
     setup_pia_logging(json_file=log_path)
@@ -95,6 +120,10 @@ def main() -> None:
     run_dir.mkdir(parents=True, exist_ok=True)
     if args.initial_width < 2:
         parser.error("--initial-width debe ser >= 2.")
+    if args.early_stop_val_loss_relative >= 0.0 and args.early_stop_patience < 1:
+        parser.error(
+            "--early-stop-patience debe ser >= 1 cuando early stop está activo."
+        )
     modelo = NarrowableChainCnn(
         in_channels=3,
         width=args.initial_width,
@@ -110,6 +139,11 @@ def main() -> None:
     _log.info("Iniciando poda estructurada por ancho en %s", run_dir)
     abort_drop: float | None = (
         None if args.abort_on_val_acc_drop < 0 else args.abort_on_val_acc_drop
+    )
+    early_rel: float | None = (
+        None
+        if args.early_stop_val_loss_relative < 0.0
+        else args.early_stop_val_loss_relative
     )
     iterative_structured_magnitude_pruning(
         run_dir=run_dir,
@@ -127,6 +161,9 @@ def main() -> None:
         lr_step_gamma=args.lr_step_gamma,
         weight_l1_aggregation=args.weight_l1_aggregation,
         abort_training_on_val_acc_drop=abort_drop,
+        early_stopping_val_loss_relative=early_rel,
+        early_stopping_patience=args.early_stop_patience,
+        early_stopping_min_delta=args.early_stop_val_loss_min_delta,
         custom_model=modelo,
         custom_train_loader=train_loader,
         custom_val_loader=val_loader,

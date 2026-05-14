@@ -20,9 +20,9 @@ from torch import nn
 from torch.utils.data import DataLoader
 
 from pia.losses.sparse_loss import SparseLoss, WeightL1Agg
+from pia.models.narrowable_chain_cnn import NarrowableChainCnn
 from pia.pruning.lottery_ticket import LotteryTicketRoundObserver
 from pia.pruning.prune_structured import (
-    NarrowableChainCnn,
     count_parameters,
     narrow_chain_cnn_by_fraction,
 )
@@ -113,6 +113,9 @@ def iterative_structured_magnitude_pruning(
     lr_step_gamma: float = 0.1,
     weight_l1_aggregation: WeightL1Agg = "sum",
     abort_training_on_val_acc_drop: float | None = None,
+    early_stopping_val_loss_relative: float | None = None,
+    early_stopping_patience: int = 1,
+    early_stopping_min_delta: float = 0.0,
 ) -> list[dict[str, Any]]:
     """
     Entrena en rondas y recorta ancho de ``NarrowableChainCnn`` entre rondas.
@@ -145,6 +148,10 @@ def iterative_structured_magnitude_pruning(
         lr_step_gamma: Para ``StepLR``.
         weight_l1_aggregation: Agregación L1 en ``SparseLoss``.
         abort_training_on_val_acc_drop: Parada anticipada por caída de val/acc.
+        early_stopping_val_loss_relative: Si no es ``None`` y ``>= 0``, parada
+            cuando ``val/loss`` rebota respecto al mejor valor de la fase.
+        early_stopping_patience: Épocas consecutivas por encima del umbral.
+        early_stopping_min_delta: Mejora mínima para registrar un nuevo mínimo.
 
     Returns:
         Lista de entradas por ronda (reflejada en ``structured_index.json``).
@@ -164,6 +171,13 @@ def iterative_structured_magnitude_pruning(
     if lr_scheduler_kind not in ("none", "cosine", "step"):
         msg = "lr_scheduler_kind debe ser 'none', 'cosine' o 'step'."
         raise ValueError(msg)
+    if early_stopping_val_loss_relative is not None:
+        if early_stopping_val_loss_relative < 0.0:
+            msg = "early_stopping_val_loss_relative debe ser >= 0 cuando no es None."
+            raise ValueError(msg)
+        if early_stopping_patience < 1:
+            msg = "early_stopping_patience debe ser >= 1."
+            raise ValueError(msg)
 
     ruta = Path(run_dir)
     ruta.mkdir(parents=True, exist_ok=True)
@@ -212,6 +226,10 @@ def iterative_structured_magnitude_pruning(
         "weight_l1_aggregation": weight_l1_aggregation,
         "initial_conv_width": initial_width,
     }
+    if early_stopping_val_loss_relative is not None:
+        meta["early_stop_val_loss_relative"] = float(early_stopping_val_loss_relative)
+        meta["early_stop_patience"] = int(early_stopping_patience)
+        meta["early_stop_val_loss_min_delta"] = float(early_stopping_min_delta)
     _persist_structured_index(ruta, [], run_status="in_progress", meta=meta)
     criterio = SparseLoss(
         lambda_weight=lambda_weight,
@@ -260,6 +278,16 @@ def iterative_structured_magnitude_pruning(
                 "structured/lr_scheduler": lr_scheduler_kind,
                 "structured/weight_l1_aggregation": weight_l1_aggregation,
             }
+            if early_stopping_val_loss_relative is not None:
+                run_config["structured/early_stop_val_loss_relative"] = float(
+                    early_stopping_val_loss_relative
+                )
+                run_config["structured/early_stop_patience"] = float(
+                    early_stopping_patience
+                )
+                run_config["structured/early_stop_val_loss_min_delta"] = float(
+                    early_stopping_min_delta
+                )
             if sha:
                 run_config["git_sha"] = sha
             ultimo = fit(
@@ -278,6 +306,9 @@ def iterative_structured_magnitude_pruning(
                 lr_scheduler=sched,
                 epoch_end_callback=None,
                 abort_training_on_val_acc_drop=abort_training_on_val_acc_drop,
+                early_stopping_val_loss_relative=early_stopping_val_loss_relative,
+                early_stopping_patience=early_stopping_patience,
+                early_stopping_min_delta=early_stopping_min_delta,
             )
             torch.save(
                 {k: v.detach().cpu() for k, v in modelo.state_dict().items()},

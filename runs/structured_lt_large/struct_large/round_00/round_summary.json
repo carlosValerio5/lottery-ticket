@@ -5,7 +5,7 @@
     "structured_round": 0,
     "lambda_weight": 1e-05,
     "gamma_activation": 1e-05,
-    "epochs": 15,
+    "epochs": 10,
     "batch_size": 64,
     "lr": 0.001,
     "data_root": "./data",
@@ -15,23 +15,23 @@
     "pruning/prune_fraction_per_step": 0.1,
     "structured/conv_width": 128.0,
     "structured/initial_width": 128.0,
-    "structured/lr_scheduler": "none",
-    "structured/weight_l1_aggregation": "sum",
-    "git_sha": "bb89d7e"
+    "structured/lr_scheduler": "cosine",
+    "structured/weight_l1_aggregation": "mean",
+    "git_sha": "d1356f2"
   },
   "metrics": {
-    "train/loss": 1.4486600302837112,
-    "train/loss_task": 1.2169772629541429,
-    "train/loss_weight_l1": 23168.229999889027,
-    "train/loss_activation_l1": 0.044892094389069825,
-    "train/acc": 0.5776145241477273,
-    "train/weight_sparsity_ratio": 0.728165328502655,
-    "val/loss": 1.4183667385125462,
-    "val/loss_task": 1.1857368199131157,
-    "val/loss_weight_l1": 23262.95703125,
-    "val/loss_activation_l1": 0.040531678148840046,
-    "val/acc": 0.5921677215189873,
-    "val/weight_sparsity_ratio": 0.728165328502655
+    "train/loss": 1.5071696214039216,
+    "train/loss_task": 1.507166045125235,
+    "train/loss_weight_l1": 0.32351099276407197,
+    "train/loss_activation_l1": 0.03389289022412744,
+    "train/acc": 0.4482421875,
+    "train/weight_sparsity_ratio": 0.0035398544277995825,
+    "val/loss": 1.5504332841197146,
+    "val/loss_task": 1.5504297531103786,
+    "val/loss_weight_l1": 0.32351046800613403,
+    "val/loss_activation_l1": 0.030159854412644724,
+    "val/acc": 0.4541139240506329,
+    "val/weight_sparsity_ratio": 0.0035398544277995825
   },
   "layer_shapes": {
     "conv1.weight": [

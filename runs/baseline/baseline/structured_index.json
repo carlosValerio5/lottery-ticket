@@ -1,0 +1,67 @@
+{
+  "schema_version": 2,
+  "run_status": "in_progress",
+  "meta": {
+    "pipeline": "structured_width_chain_cnn",
+    "rewind_mode": "none",
+    "lr_scheduler_kind": "cosine",
+    "lr_step_size": 10,
+    "lr_step_gamma": 0.1,
+    "weight_l1_aggregation": "sum",
+    "initial_conv_width": 64
+  },
+  "rounds": [
+    {
+      "round": 0,
+      "status": "complete",
+      "run_dir": "/Users/carlosvalerio/Documents/Study/Aprendizaje/pia/runs/baseline/baseline/round_00",
+      "final_metrics": {
+        "train/loss": 1.3491933542219074,
+        "train/loss_task": 1.349192876368761,
+        "train/loss_weight_l1": 235198.1728071733,
+        "train/loss_activation_l1": 0.050393697869201955,
+        "train/acc": 0.518325343304737,
+        "train/weight_sparsity_ratio": 0.002399266930297017,
+        "val/loss": 1.3665167480707168,
+        "val/loss_task": 1.3665162712335586,
+        "val/loss_weight_l1": 235198.171875,
+        "val/loss_activation_l1": 0.047534081153571606,
+        "val/acc": 0.525390625,
+        "val/weight_sparsity_ratio": 0.002399266930297017
+      },
+      "target_sparsity": 0.09999999999999998,
+      "achieved_sparsity": 0.09375,
+      "structured_conv_width": 58,
+      "structured_param_count": 625772,
+      "layer_shapes": {
+        "conv1.weight": [
+          58,
+          3,
+          3,
+          3
+        ],
+        "conv2.weight": [
+          58,
+          58,
+          3,
+          3
+        ],
+        "fc.weight": [
+          10,
+          59392
+        ],
+        "fc.bias": [
+          10
+        ]
+      },
+      "prune_info": {
+        "target_prune_fraction": 0.1,
+        "k": 6,
+        "width_before": 64,
+        "width_after": 58,
+        "removed_indices": "[0, 7, 24, 31, 51, 54]",
+        "threshold": 3666.0390625
+      }
+    }
+  ]
+}

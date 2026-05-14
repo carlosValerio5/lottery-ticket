@@ -11,9 +11,9 @@ import pytest
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
+from pia.models.narrowable_chain_cnn import NarrowableChainCnn
 from pia.models.resnet_cifar import apply_he_init
 from pia.pruning.prune_structured import (
-    NarrowableChainCnn,
     chain_cnn_channel_l1_scores,
     count_parameters,
     narrow_chain_cnn_by_fraction,
