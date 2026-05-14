@@ -1,0 +1,322 @@
+{
+  "schema_version": 2,
+  "run_status": "complete",
+  "meta": {
+    "pipeline": "structured_width_chain_cnn",
+    "rewind_mode": "none",
+    "lr_scheduler_kind": "cosine",
+    "lr_step_size": 10,
+    "lr_step_gamma": 0.1,
+    "weight_l1_aggregation": "sum",
+    "initial_conv_width": 32,
+    "early_stop_val_loss_relative": 0.05,
+    "early_stop_patience": 2,
+    "early_stop_val_loss_min_delta": 0.0
+  },
+  "rounds": [
+    {
+      "round": 0,
+      "status": "complete",
+      "run_dir": "/Users/carlosvalerio/Documents/Study/Aprendizaje/pia/runs/structured-pruning/structured-pruning/round_00",
+      "final_metrics": {
+        "train/loss": 2.3802441961385985,
+        "train/loss_task": 1.472047551789067,
+        "train/loss_weight_l1": 90819.59725674716,
+        "train/loss_activation_l1": 0.06188517408868806,
+        "train/acc": 0.4627352627840909,
+        "train/weight_sparsity_ratio": 0.1247357651591301,
+        "val/loss": 2.3932366609573363,
+        "val/loss_task": 1.4855775892734528,
+        "val/loss_weight_l1": 90765.859375,
+        "val/loss_activation_l1": 0.05739876618608832,
+        "val/acc": 0.469921875,
+        "val/weight_sparsity_ratio": 0.1247357651591301
+      },
+      "target_sparsity": 0.09999999999999998,
+      "achieved_sparsity": 0.09375,
+      "structured_conv_width": 29,
+      "structured_param_count": 305322,
+      "layer_shapes": {
+        "conv1.weight": [
+          29,
+          3,
+          3,
+          3
+        ],
+        "conv2.weight": [
+          29,
+          29,
+          3,
+          3
+        ],
+        "fc.weight": [
+          10,
+          29696
+        ],
+        "fc.bias": [
+          10
+        ]
+      },
+      "prune_info": {
+        "target_prune_fraction": 0.1,
+        "k": 3,
+        "width_before": 32,
+        "width_after": 29,
+        "removed_indices": "[0, 15, 24]",
+        "threshold": 1999.0731201171875
+      }
+    },
+    {
+      "round": 1,
+      "status": "complete",
+      "run_dir": "/Users/carlosvalerio/Documents/Study/Aprendizaje/pia/runs/structured-pruning/structured-pruning/round_01",
+      "final_metrics": {
+        "train/loss": 1.4137138165533543,
+        "train/loss_task": 1.1456455816938118,
+        "train/loss_weight_l1": 26806.764792702415,
+        "train/loss_activation_l1": 0.06119363652330569,
+        "train/acc": 0.596073034981435,
+        "train/weight_sparsity_ratio": 0.37803366780281067,
+        "val/loss": 1.3834607109427453,
+        "val/loss_task": 1.1154659554362296,
+        "val/loss_weight_l1": 26799.416015625,
+        "val/loss_activation_l1": 0.0558427395299077,
+        "val/acc": 0.6138671875,
+        "val/weight_sparsity_ratio": 0.37803366780281067
+      },
+      "target_sparsity": 0.18999999999999995,
+      "achieved_sparsity": 0.15625,
+      "structured_conv_width": 27,
+      "structured_param_count": 283780,
+      "layer_shapes": {
+        "conv1.weight": [
+          27,
+          3,
+          3,
+          3
+        ],
+        "conv2.weight": [
+          27,
+          27,
+          3,
+          3
+        ],
+        "fc.weight": [
+          10,
+          27648
+        ],
+        "fc.bias": [
+          10
+        ]
+      },
+      "prune_info": {
+        "target_prune_fraction": 0.1,
+        "k": 2,
+        "width_before": 29,
+        "width_after": 27,
+        "removed_indices": "[1, 2]",
+        "threshold": 28.878141403198242
+      }
+    },
+    {
+      "round": 2,
+      "status": "complete",
+      "run_dir": "/Users/carlosvalerio/Documents/Study/Aprendizaje/pia/runs/structured-pruning/structured-pruning/round_02",
+      "final_metrics": {
+        "train/loss": 1.2463543542068114,
+        "train/loss_task": 1.0144127382134849,
+        "train/loss_weight_l1": 23194.091552734375,
+        "train/loss_activation_l1": 0.0677427133672278,
+        "train/acc": 0.6473006431690671,
+        "train/weight_sparsity_ratio": 0.259112685918808,
+        "val/loss": 1.2224278390407561,
+        "val/loss_task": 0.9905520468950272,
+        "val/loss_weight_l1": 23187.521484375,
+        "val/loss_activation_l1": 0.061425115913152695,
+        "val/acc": 0.662890625,
+        "val/weight_sparsity_ratio": 0.259112685918808
+      },
+      "target_sparsity": 0.2709999999999999,
+      "achieved_sparsity": 0.21875,
+      "structured_conv_width": 25,
+      "structured_param_count": 262310,
+      "layer_shapes": {
+        "conv1.weight": [
+          25,
+          3,
+          3,
+          3
+        ],
+        "conv2.weight": [
+          25,
+          25,
+          3,
+          3
+        ],
+        "fc.weight": [
+          10,
+          25600
+        ],
+        "fc.bias": [
+          10
+        ]
+      },
+      "prune_info": {
+        "target_prune_fraction": 0.1,
+        "k": 2,
+        "width_before": 27,
+        "width_after": 25,
+        "removed_indices": "[0, 21]",
+        "threshold": 37.449462890625
+      }
+    },
+    {
+      "round": 3,
+      "status": "complete",
+      "run_dir": "/Users/carlosvalerio/Documents/Study/Aprendizaje/pia/runs/structured-pruning/structured-pruning/round_03",
+      "final_metrics": {
+        "train/loss": 1.1604477671737021,
+        "train/loss_task": 0.9572654994712635,
+        "train/loss_weight_l1": 20318.154552112926,
+        "train/loss_activation_l1": 0.07517137310721657,
+        "train/acc": 0.6695988201959566,
+        "train/weight_sparsity_ratio": 0.1921771913766861,
+        "val/loss": 1.1430597737431527,
+        "val/loss_task": 0.939936688542366,
+        "val/loss_weight_l1": 20312.240234375,
+        "val/loss_activation_l1": 0.06755925305187702,
+        "val/acc": 0.68671875,
+        "val/weight_sparsity_ratio": 0.1921771913766861
+      },
+      "target_sparsity": 0.3439,
+      "achieved_sparsity": 0.28125,
+      "structured_conv_width": 23,
+      "structured_param_count": 240912,
+      "layer_shapes": {
+        "conv1.weight": [
+          23,
+          3,
+          3,
+          3
+        ],
+        "conv2.weight": [
+          23,
+          23,
+          3,
+          3
+        ],
+        "fc.weight": [
+          10,
+          23552
+        ],
+        "fc.bias": [
+          10
+        ]
+      },
+      "prune_info": {
+        "target_prune_fraction": 0.1,
+        "k": 2,
+        "width_before": 25,
+        "width_after": 23,
+        "removed_indices": "[8, 11]",
+        "threshold": 254.69619750976562
+      }
+    },
+    {
+      "round": 4,
+      "status": "complete",
+      "run_dir": "/Users/carlosvalerio/Documents/Study/Aprendizaje/pia/runs/structured-pruning/structured-pruning/round_04",
+      "final_metrics": {
+        "train/loss": 1.1054404689507051,
+        "train/loss_task": 0.9260684810578823,
+        "train/loss_weight_l1": 17937.115633877842,
+        "train/loss_activation_l1": 0.0850200131323866,
+        "train/acc": 0.6812657829035412,
+        "train/weight_sparsity_ratio": 0.13779720664024353,
+        "val/loss": 1.084116679430008,
+        "val/loss_task": 0.9047963745892048,
+        "val/loss_weight_l1": 17931.95703125,
+        "val/loss_activation_l1": 0.07584874015301465,
+        "val/acc": 0.697265625,
+        "val/weight_sparsity_ratio": 0.13779720664024353
+      },
+      "target_sparsity": 0.40950999999999993,
+      "achieved_sparsity": 0.34375,
+      "structured_conv_width": 21,
+      "structured_param_count": 219586,
+      "layer_shapes": {
+        "conv1.weight": [
+          21,
+          3,
+          3,
+          3
+        ],
+        "conv2.weight": [
+          21,
+          21,
+          3,
+          3
+        ],
+        "fc.weight": [
+          10,
+          21504
+        ],
+        "fc.bias": [
+          10
+        ]
+      },
+      "prune_info": {
+        "target_prune_fraction": 0.1,
+        "k": 2,
+        "width_before": 23,
+        "width_after": 21,
+        "removed_indices": "[2, 12]",
+        "threshold": 309.0836486816406
+      }
+    },
+    {
+      "round": 5,
+      "status": "complete",
+      "run_dir": "/Users/carlosvalerio/Documents/Study/Aprendizaje/pia/runs/structured-pruning/structured-pruning/round_05",
+      "final_metrics": {
+        "train/loss": 1.077358554032716,
+        "train/loss_task": 0.9149600206450983,
+        "train/loss_weight_l1": 16239.758486661043,
+        "train/loss_activation_l1": 0.09380739355798472,
+        "train/acc": 0.686082011596723,
+        "train/weight_sparsity_ratio": 0.10015210509300232,
+        "val/loss": 1.0568516194820403,
+        "val/loss_task": 0.894490709900856,
+        "val/loss_weight_l1": 16236.0078125,
+        "val/loss_activation_l1": 0.08326925951987504,
+        "val/acc": 0.6966796875,
+        "val/weight_sparsity_ratio": 0.10015210509300232
+      },
+      "target_sparsity": 0.40950999999999993,
+      "achieved_sparsity": 0.34375,
+      "structured_conv_width": 21,
+      "structured_param_count": 219586,
+      "layer_shapes": {
+        "conv1.weight": [
+          21,
+          3,
+          3,
+          3
+        ],
+        "conv2.weight": [
+          21,
+          21,
+          3,
+          3
+        ],
+        "fc.weight": [
+          10,
+          21504
+        ],
+        "fc.bias": [
+          10
+        ]
+      }
+    }
+  ]
+}

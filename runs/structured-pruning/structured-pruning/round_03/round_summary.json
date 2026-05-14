@@ -1,0 +1,60 @@
+{
+  "config": {
+    "run_id": "round_03",
+    "structured_parent": "structured-pruning",
+    "structured_round": 3,
+    "lambda_weight": 1e-05,
+    "gamma_activation": 1e-05,
+    "epochs": 15,
+    "batch_size": 128,
+    "lr": 0.001,
+    "data_root": "./data",
+    "device": "mps",
+    "pruning/imp_round": 3.0,
+    "pruning/mask_sparsity": 0.21875,
+    "pruning/prune_fraction_per_step": 0.1,
+    "structured/conv_width": 25.0,
+    "structured/initial_width": 32.0,
+    "structured/lr_scheduler": "cosine",
+    "structured/weight_l1_aggregation": "sum",
+    "structured/early_stop_val_loss_relative": 0.05,
+    "structured/early_stop_patience": 2.0,
+    "structured/early_stop_val_loss_min_delta": 0.0,
+    "git_sha": "d1356f2"
+  },
+  "metrics": {
+    "train/loss": 1.1604477671737021,
+    "train/loss_task": 0.9572654994712635,
+    "train/loss_weight_l1": 20318.154552112926,
+    "train/loss_activation_l1": 0.07517137310721657,
+    "train/acc": 0.6695988201959566,
+    "train/weight_sparsity_ratio": 0.1921771913766861,
+    "val/loss": 1.1430597737431527,
+    "val/loss_task": 0.939936688542366,
+    "val/loss_weight_l1": 20312.240234375,
+    "val/loss_activation_l1": 0.06755925305187702,
+    "val/acc": 0.68671875,
+    "val/weight_sparsity_ratio": 0.1921771913766861
+  },
+  "layer_shapes": {
+    "conv1.weight": [
+      25,
+      3,
+      3,
+      3
+    ],
+    "conv2.weight": [
+      25,
+      25,
+      3,
+      3
+    ],
+    "fc.weight": [
+      10,
+      25600
+    ],
+    "fc.bias": [
+      10
+    ]
+  }
+}

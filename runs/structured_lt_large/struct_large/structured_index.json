@@ -1,0 +1,14 @@
+{
+  "schema_version": 2,
+  "run_status": "in_progress",
+  "meta": {
+    "pipeline": "structured_width_chain_cnn",
+    "rewind_mode": "none",
+    "lr_scheduler_kind": "none",
+    "lr_step_size": 10,
+    "lr_step_gamma": 0.1,
+    "weight_l1_aggregation": "sum",
+    "initial_conv_width": 128
+  },
+  "rounds": []
+}

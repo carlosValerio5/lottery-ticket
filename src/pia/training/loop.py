@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any, TextIO
@@ -17,6 +18,7 @@ from tqdm import tqdm
 
 from pia.losses.sparse_loss import SparseLoss
 from pia.training.activation_hooks import ActivationCapture
+from pia.training.early_stopping import val_loss_rebound_early_stop_step
 from pia.training.metrics import accuracy_top1, weight_sparsity_ratio
 from pia.training.observers import TrainingObserver
 
@@ -232,6 +234,9 @@ def fit(
         Callable[[int, nn.Module, dict[str, float]], None] | None
     ) = None,
     abort_training_on_val_acc_drop: float | None = None,
+    early_stopping_val_loss_relative: float | None = None,
+    early_stopping_patience: int = 1,
+    early_stopping_min_delta: float = 0.0,
 ) -> dict[str, float]:
     """
     Entrena ``epochs`` épocas y notifica al observador.
@@ -248,11 +253,28 @@ def fit(
             ``(época, modelo, métricas)`` (p. ej. checkpoints IMP).
         abort_training_on_val_acc_drop: Si no es ``None`` y la ``val/acc`` baja
             más que este margen respecto a la época anterior, corta el entrenamiento.
+        early_stopping_val_loss_relative: Si no es ``None`` y ``>= 0``, corta
+            cuando ``val/loss`` supere ``(1+r)`` veces el mejor ``val/loss`` visto
+            durante ``early_stopping_patience`` épocas seguidas.
+        early_stopping_patience: Épocas consecutivas por encima del umbral relativo.
+        early_stopping_min_delta: Mejora mínima en ``val/loss`` para actualizar el
+            mejor valor (evita ruido numérico).
     """
+    if early_stopping_val_loss_relative is not None:
+        if early_stopping_val_loss_relative < 0.0:
+            msg = "early_stopping_val_loss_relative debe ser >= 0 cuando se usa."
+            raise ValueError(msg)
+        if early_stopping_patience < 1:
+            msg = "early_stopping_patience debe ser >= 1."
+            raise ValueError(msg)
     capture = ActivationCapture(model)
     observer.on_train_begin(dict(run_config))
     ultimo_val: dict[str, float] = {}
     val_acc_prev: float | None = None
+    best_val_loss = math.inf
+    val_loss_bad_epochs = 0
+    early_stopped = False
+    early_stop_reason: str | None = None
     live_path: Path | None = None
     if live_progress_dir is not None:
         live_path = Path(live_progress_dir) / "live_batches.jsonl"
@@ -302,6 +324,8 @@ def fit(
                         caida,
                         abort_training_on_val_acc_drop,
                     )
+                    early_stopped = True
+                    early_stop_reason = "val_acc_drop"
                     break
             val_acc_prev = float(val_m["val/acc"])
             if val_m["val/acc"] < acc_floor:
@@ -310,8 +334,39 @@ def fit(
                     val_m["val/acc"],
                     acc_floor,
                 )
+            if early_stopping_val_loss_relative is not None:
+                vloss = float(ultimo_val["val/loss"])
+                best_val_loss, val_loss_bad_epochs, stop_loss = (
+                    val_loss_rebound_early_stop_step(
+                        vloss,
+                        best_val_loss,
+                        relative_margin=early_stopping_val_loss_relative,
+                        patience=early_stopping_patience,
+                        min_delta=early_stopping_min_delta,
+                        bad_epochs=val_loss_bad_epochs,
+                    )
+                )
+                if stop_loss:
+                    _log.warning(
+                        "Parada anticipada (val/loss): actual=%.6f umbral relativo "
+                        "sobre mejor=%.6f r=%.4f racha=%d/%d.",
+                        vloss,
+                        best_val_loss,
+                        early_stopping_val_loss_relative,
+                        val_loss_bad_epochs,
+                        early_stopping_patience,
+                    )
+                    early_stopped = True
+                    early_stop_reason = "val_loss_rebound"
+                    break
     finally:
         capture.remove()
+    if early_stopped:
+        ultimo_val = {**ultimo_val, "train/early_stopped": 1.0}
     resumen: dict[str, Any] = {"last_metrics": ultimo_val}
+    if early_stopped:
+        resumen["early_stopped"] = True
+        if early_stop_reason is not None:
+            resumen["early_stop_reason"] = early_stop_reason
     observer.on_train_end(resumen)
     return ultimo_val
